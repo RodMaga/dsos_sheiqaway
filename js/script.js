@@ -1,24 +1,33 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-    // 1. VARIÁVEIS GLOBAIS
+    document.getElementById('logo-button').addEventListener('click', () => {
+        window.location.href = 'index.html';
+    });
+
     let allTrips = [];
     let allProviders = [];
-    let currentResults = []; // NOVO: Guarda os resultados da última pesquisa
-    let providerMap = {}; // NOVO: Guarda o mapa de providers
+    let currentResults = [];
+    let providerMap = {};
+    let allLocations = [];
+    let allLocationsLower = new Set();
 
-    // Elementos da DOM
     const searchForm = document.getElementById('search-form');
     const resultsContainer = document.getElementById('results-container');
     const loadingSpinner = document.getElementById('loading-spinner');
     const errorMessage = document.getElementById('error-message');
     
-    // Elementos dos Filtros
     const sortSelect = document.getElementById('sort-by');
     const providerFilter = document.getElementById('filter-provider');
     const priceFilter = document.getElementById('filter-price');
     const priceValue = document.getElementById('price-value');
+    const cartLink = document.getElementById('cart-link');
 
-    // 2. CARREGAMENTO DOS DADOS (JSON)
+    const originInput = document.getElementById('origin');
+    const destinationInput = document.getElementById('destination');
+    const dateInput = document.getElementById('departure-date');
+    const originSuggestions = document.getElementById('origin-suggestions');
+    const destinationSuggestions = document.getElementById('destination-suggestions');
+
     async function loadData() {
         try {
             const tripsResponse = await fetch('data/trips_com_lotacao.json');
@@ -29,10 +38,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!providersResponse.ok) throw new Error('Falha ao carregar providers.json');
             allProviders = await providersResponse.json();
 
-            console.log("Dados carregados com sucesso!");
-            
-            // NOVO: Preenche o mapa de providers e o filtro
             populateProviderFilter();
+            populateLocationSuggestions();
 
         } catch (error) {
             console.error("Erro ao carregar dados:", error);
@@ -40,13 +47,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // NOVO: Função para preencher o filtro de companhias
     function populateProviderFilter() {
         allProviders.forEach(provider => {
-            // Guarda no mapa para uso futuro
             providerMap[provider.id] = provider.name;
             
-            // Adiciona ao <select>
             const option = document.createElement('option');
             option.value = provider.id;
             option.textContent = provider.name;
@@ -54,109 +58,218 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 3. LÓGICA DE PESQUISA E VALIDAÇÃO
+    function populateLocationSuggestions() {
+        const locations = new Set();
+        allTrips.forEach(trip => {
+            locations.add(trip.from);
+            locations.add(trip.to);
+        });
+        
+        allLocations = [...locations].sort();
+        allLocationsLower = new Set(allLocations.map(loc => loc.toLowerCase()));
+    }
     
     searchForm.addEventListener('submit', (event) => {
-        event.preventDefault(); 
-        console.log("EVENTO 'SUBMIT' DO FORMULÁRIO DETETADO!");
+        event.preventDefault();
+        
+        originInput.classList.remove('input-error-highlight');
+        destinationInput.classList.remove('input-error-highlight');
+        dateInput.classList.remove('input-error-highlight');
+        errorMessage.style.display = 'none';
 
-        if (!validateSearchForm()) {
-            console.log("VALIDAÇÃO FALHOU. Pesquisa interrompida.");
-            return; 
+        const origin = originInput.value.trim();
+        const dest = destinationInput.value.trim();
+        const date = dateInput.value;
+
+        if (origin === '') {
+            errorMessage.textContent = 'Por favor, preencha a Origem.';
+            errorMessage.style.display = 'block';
+            originInput.classList.add('input-error-highlight');
+            originInput.focus();
+            return;
         }
         
-        console.log("VALIDAÇÃO OK. A iniciar performSearch()...");
-        performSearch();
+        if (dest === '') {
+            errorMessage.textContent = 'Por favor, preencha o Destino.';
+            errorMessage.style.display = 'block';
+            destinationInput.classList.add('input-error-highlight');
+            destinationInput.focus();
+            return;
+        }
+
+        if (date === '') {
+            errorMessage.textContent = 'Por favor, selecione uma Data de Partida.';
+            errorMessage.style.display = 'block';
+            dateInput.classList.add('input-error-highlight');
+            dateInput.focus();
+            return;
+        }
+        
+        document.activeElement.blur(); 
     });
 
-    // NOVO: Listeners para os filtros e ordenação
     sortSelect.addEventListener('change', applyFiltersAndSort);
     providerFilter.addEventListener('change', applyFiltersAndSort);
-    priceFilter.addEventListener('input', () => { // 'input' atualiza em tempo real
+    priceFilter.addEventListener('input', () => {
         priceValue.textContent = `€${priceFilter.value}`;
         applyFiltersAndSort();
     });
 
+    resultsContainer.addEventListener('click', (event) => {
+        if (event.target.classList.contains('buy-button')) {
+            const button = event.target;
+            const tripId = button.dataset.tripId;
+            handlePurchase(tripId, button);
+        }
+    });
 
-    // Função de Validação
-    function validateSearchForm() {
-        const origin = document.getElementById('origin').value;
-        const destination = document.getElementById('destination').value;
-        const departureDate = document.getElementById('departure-date').value;
+    originInput.addEventListener('input', () => {
+        showSuggestions(originInput, originSuggestions);
+        originInput.classList.remove('input-error-highlight');
+    });
+    destinationInput.addEventListener('input', () => {
+        showSuggestions(destinationInput, destinationSuggestions);
+        destinationInput.classList.remove('input-error-highlight');
+    });
+    
+    originSuggestions.addEventListener('click', (e) => selectSuggestion(e, originInput, originSuggestions));
+    destinationSuggestions.addEventListener('click', (e) => selectSuggestion(e, destinationInput, destinationSuggestions));
+
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.form-group-wrapper')) {
+            originSuggestions.innerHTML = '';
+            destinationSuggestions.innerHTML = '';
+        }
+    });
+
+    originInput.addEventListener('change', runLiveSearch);
+    destinationInput.addEventListener('change', runLiveSearch);
+    dateInput.addEventListener('change', () => {
+        runLiveSearch();
+        dateInput.classList.remove('input-error-highlight');
+    });
+
+    originInput.addEventListener('keydown', (e) => handleInputKeydown(e, originInput, originSuggestions));
+    destinationInput.addEventListener('keydown', (e) => handleInputKeydown(e, destinationInput, destinationSuggestions));
+    
+    originInput.addEventListener('blur', () => handleInputBlur(originInput, originSuggestions));
+    destinationInput.addEventListener('blur', () => handleInputBlur(destinationInput, destinationSuggestions));
+
+    function handleInputKeydown(event, input, suggestionsContainer) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            if (suggestionsContainer.children.length > 0) {
+                const firstSuggestion = suggestionsContainer.firstChild.textContent;
+                input.value = firstSuggestion;
+                suggestionsContainer.innerHTML = '';
+                runLiveSearch();
+                input.blur();
+            }
+        }
+    }
+
+    function handleInputBlur(input, suggestionsContainer) {
+        setTimeout(() => {
+            const currentValue = input.value.trim();
+            
+            if (currentValue === '') {
+                suggestionsContainer.innerHTML = '';
+                runLiveSearch();
+                return;
+            }
+
+            if (!allLocationsLower.has(currentValue.toLowerCase())) {
+                const firstSuggestion = suggestionsContainer.firstChild?.textContent;
+                if (firstSuggestion) {
+                    input.value = firstSuggestion;
+                } else {
+                    input.value = '';
+                }
+                runLiveSearch();
+            }
+            
+            suggestionsContainer.innerHTML = '';
+        }, 200);
+    }
+
+    function showSuggestions(input, suggestionsContainer) {
+        const query = input.value.toLowerCase().trim();
+        suggestionsContainer.innerHTML = '';
+
+        if (query.length === 0) {
+            return;
+        }
+
+        const filteredLocations = allLocations.filter(location => 
+            location.toLowerCase().startsWith(query)
+        );
+
+        filteredLocations.forEach(location => {
+            const item = document.createElement('div');
+            item.classList.add('suggestion-item');
+            item.textContent = location;
+            suggestionsContainer.appendChild(item);
+        });
+    }
+
+    function selectSuggestion(event, input, suggestionsContainer) {
+        if (event.target.classList.contains('suggestion-item')) {
+            input.value = event.target.textContent;
+            suggestionsContainer.innerHTML = '';
+            runLiveSearch();
+        }
+    }
+
+    function runLiveSearch() {
+        loadingSpinner.classList.remove('hidden');
+        
+        const originQuery = originInput.value.toLowerCase().trim();
+        const destQuery = destinationInput.value.toLowerCase().trim();
+        const dateQuery = dateInput.value;
 
         errorMessage.textContent = '';
         errorMessage.style.display = 'none';
-
-        if (origin.trim() === '' || destination.trim() === '' || departureDate === '') {
-            errorMessage.textContent = 'Por favor, preencha a Origem, Destino e Data de Partida.';
-            errorMessage.style.display = 'block';
-            return false;
-        }
-        
-        if (origin.trim().toLowerCase() === destination.trim().toLowerCase()) {
+        if (originQuery.length > 0 && originQuery === destQuery) {
             errorMessage.textContent = 'A Origem e o Destino não podem ser iguais.';
             errorMessage.style.display = 'block';
-            return false;
         }
+
+        originSuggestions.innerHTML = '';
+        destinationSuggestions.innerHTML = '';
         
-        return true; 
-    }
+        currentResults = allTrips.filter(trip => {
+            const originMatch = (originQuery.length === 0) 
+                ? true 
+                : trip.from.toLowerCase() === originQuery;
+            
+            const destMatch = (destQuery.length === 0) 
+                ? true 
+                : trip.to.toLowerCase() === destQuery;
 
-    // Função que executa a pesquisa (Passo 1: Encontrar Viagens)
-    async function performSearch() {
-        loadingSpinner.classList.remove('hidden');
-        resultsContainer.innerHTML = ''; 
-        errorMessage.style.display = 'none'; 
-        
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        // Obtém valores
-        const origin = document.getElementById('origin').value.toLowerCase().trim();
-        const destination = document.getElementById('destination').value.toLowerCase().trim();
-        const departureDate = document.getElementById('departure-date').value;
-
-        console.log("--- INICIANDO FILTRO ---");
-        console.log(`A PESQUISAR POR: Origem='${origin}', Destino='${destination}', Data='${departureDate}'`);
-
-        // Lógica de Filtro
-        currentResults = allTrips.filter(trip => { // Guarda os resultados
-            const tripOrigin = trip.from.toLowerCase();
-            const tripDestination = trip.to.toLowerCase();
-            const tripDate = trip.date;
-
-            const originMatch = tripOrigin === origin;
-            const destinationMatch = tripDestination === destination;
-            const dateMatch = tripDate === departureDate;
-
-            return originMatch && destinationMatch && dateMatch;
+            const dateMatch = (dateQuery.length === 0) 
+                ? true 
+                : trip.date === dateQuery;
+            
+            return originMatch && destMatch && dateMatch;
         });
 
-        console.log(`--- FILTRO TERMINADO ---: ${currentResults.length} viagens encontradas.`);
-
-        loadingSpinner.classList.add('hidden');
-
-        // NOVO: Chama a função para aplicar filtros e ordenação
         applyFiltersAndSort();
+        loadingSpinner.classList.add('hidden');
     }
 
-    // NOVO: (Passo 2: Filtrar e Ordenar os resultados encontrados)
     function applyFiltersAndSort() {
-        let filteredTrips = [...currentResults]; // Copia os resultados da pesquisa
+        let filteredTrips = [...currentResults];
         
-        // Obtém valores dos filtros
         const selectedProvider = providerFilter.value;
         const maxPrice = parseFloat(priceFilter.value);
         const sortCriteria = sortSelect.value;
 
-        // 1. Aplicar Filtro de Companhia
         if (selectedProvider !== 'all') {
             filteredTrips = filteredTrips.filter(trip => trip.providerId === selectedProvider);
         }
 
-        // 2. Aplicar Filtro de Preço
         filteredTrips = filteredTrips.filter(trip => trip.price.base <= maxPrice);
 
-        // 3. Aplicar Ordenação
         filteredTrips.sort((a, b) => {
             if (sortCriteria === 'price-asc') {
                 return a.price.base - b.price.base;
@@ -168,19 +281,18 @@ document.addEventListener('DOMContentLoaded', () => {
             return 0;
         });
 
-        // 4. Exibir os resultados finais
         displayResults(filteredTrips);
     }
 
-
-    // 4. EXIBIÇÃO DOS RESULTADOS
     function displayResults(trips) {
-        resultsContainer.innerHTML = ''; // Limpa sempre antes de exibir
-        
-        console.log(`A função displayResults() foi chamada com ${trips.length} viagens.`);
+        resultsContainer.innerHTML = ''; 
 
         if (trips.length === 0) {
-            resultsContainer.innerHTML = '<p>Nenhuma viagem encontrada para os critérios selecionados.</p>';
+            if (originInput.value === '' && destinationInput.value === '' && dateInput.value === '') {
+                 resultsContainer.innerHTML = '<p>Por favor, efetue uma pesquisa para ver os resultados.</p>';
+            } else {
+                 resultsContainer.innerHTML = '<p>Nenhuma viagem encontrada para os critérios selecionados.</p>';
+            }
             return;
         }
 
@@ -198,7 +310,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         <strong>Chegada:</strong> ${trip.arrive}h
                     </p>
                     <p><strong>Duração:</strong> ${durationHours}h ${durationMinutes}min</p>
-                    <p class="price">€ ${trip.price.base.toFixed(2)}</p>
+                    
+                    <div class="trip-footer">
+                        <span class="price">€ ${trip.price.base.toFixed(2)}</span>
+                        <button class="buy-button" data-trip-id="${trip.id}">Comprar</button>
+                    </div>
                 </div>
             `;
             
@@ -206,8 +322,39 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    function updateCartCount() {
+        const cart = JSON.parse(localStorage.getItem('shoppingCart')) || [];
+        cartLink.textContent = `Carrinho (${cart.length})`;
+    }
 
-    // 5. INICIALIZAÇÃO
+    function handlePurchase(tripId, buttonElement) {
+        const tripToBuy = allTrips.find(trip => trip.id === tripId);
+        if (!tripToBuy) return;
+
+        let cart = JSON.parse(localStorage.getItem('shoppingCart')) || [];
+
+        if (cart.some(trip => trip.id === tripId)) {
+            alert('Esta viagem já está no seu carrinho.');
+            return;
+        }
+
+        if (tripToBuy.booked >= tripToBuy.capacity) {
+            alert('Lamentamos, essa viagem já não tem lugares disponíveis.');
+            buttonElement.textContent = 'Esgotado';
+            buttonElement.disabled = true;
+            return;
+        }
+
+        cart.push(tripToBuy);
+        localStorage.setItem('shoppingCart', JSON.stringify(cart));
+        
+        updateCartCount(); 
+
+        buttonElement.textContent = 'Adicionado!';
+        buttonElement.disabled = true;
+    }
+
     loadData();
+    updateCartCount();
 
 });

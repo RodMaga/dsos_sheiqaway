@@ -9,26 +9,37 @@
 <body>
 
     <header>
-        <h1>sheiqaway</h1>
+        <button type="button" id="logo-button" class="header-logo-button">
+            <h1>sheiqaway</h1>
+        </button>
         <nav>
-            <a href="#">Promoções</a>
-            <a href="#">Minhas Reservas</a>
+            <a href="index.html" class="current-page">Viajar</a>
+            <a href="carrinho.html" id="cart-link">Carrinho (0)</a>
             <a href="#">Login</a>
         </nav>
     </header>
 
     <main>
-        <section class="search-box">
+        <section class="content-card search-box">
             <h2>Encontre a sua próxima viagem</h2>
             <form id="search-form">
-                <div class="form-group">
-                    <label for="origin">Origem</label>
-                    <input type="text" id="origin" placeholder="Ex: Porto">
+                
+                <div class="form-group-wrapper">
+                    <div class="form-group">
+                        <label for="origin">Origem</label>
+                        <input type="text" id="origin" placeholder="Ex: Porto" autocomplete="off">
+                    </div>
+                    <div id="origin-suggestions" class="suggestions-container"></div>
                 </div>
-                <div class="form-group">
-                    <label for="destination">Destino</label>
-                    <input type="text" id="destination" placeholder="Ex: Lisboa">
+                
+                <div class="form-group-wrapper">
+                    <div class="form-group">
+                        <label for="destination">Destino</label>
+                        <input type="text" id="destination" placeholder="Ex: Lisboa" autocomplete="off">
+                    </div>
+                    <div id="destination-suggestions" class="suggestions-container"></div>
                 </div>
+
                 <div class="form-group">
                     <label for="departure-date">Data de Partida</label>
                     <input type="date" id="departure-date">
@@ -47,10 +58,10 @@
             <div id="error-message" class="error-message"></div>
         </section>
 
-        <section class="results-box">
+        <section class="content-card results-box">
             <h3>Resultados</h3>
             
-            <div class_name="filters">
+            <div class="filters">
                 <div class="form-group">
                     <label for="sort-by">Ordenar por:</label>
                     <select id="sort-by">
