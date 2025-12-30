@@ -24,6 +24,14 @@ body {
     line-height: 1.6;
 }
 
+body.dark-mode {
+    --bg-body: #121212;
+    --bg-white: #1e1e1e;
+    --text-primary: #ffffff;
+    --text-secondary: #b0b0b0;
+    --border-color: #333;
+}
+
 /* --- 3. Header --- */
 header {
     background-color: var(--bg-white);
@@ -428,4 +436,54 @@ footer {
     padding: 20px;
     color: var(--text-secondary);
     font-size: 0.9em;
+}
+
+/* Feedback de Ocupação */
+.high-occupancy {
+    background-color: #dc3545 !important;
+}
+
+#auth-section {
+    font-size: 0.9em;
+    color: var(--text-secondary);
+}
+
+#auth-section a {
+    text-decoration: none;
+    color: var(--primary-color);
+    font-weight: bold;
+}
+
+/* Animação para o Checkout */
+@keyframes successScale {
+    0% { transform: scale(0.8); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+.secondary-button {
+    background: transparent;
+    border: 1px solid var(--primary-color);
+    color: var(--primary-color);
+    padding: 8px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-right: 5px;
+}
+
+.secondary-button:hover {
+    background: var(--primary-light);
+}
+
+.badge {
+    font-size: 0.75em;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-weight: bold;
+}
+
+.badge.success { background: #d4edda; color: #155724; }
+.badge.danger { background: #f8d7da; color: #721c24; }
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
