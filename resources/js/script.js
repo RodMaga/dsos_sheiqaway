@@ -657,13 +657,8 @@ class SearchManager {
                     return;
                 }
                 
-                // Verificar se o utilizador está autenticado
-                if (!window.GlobalManager?.isLoggedIn()) {
-                    if (confirm('Para reservar uma viagem, precisa de fazer login. Deseja ir para a página de login?')) {
-                        window.location.href = '/login';
-                    }
-                    return;
-                }
+                // Allow adding to cart without login
+                // User will be prompted to login at checkout
                 
                 // Adicionar ao carrinho
                 if (window.GlobalManager?.addToCart(trip)) {

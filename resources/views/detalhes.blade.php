@@ -8,14 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <header>
-        <button type="button" id="logo-button" class="header-logo-button">
-            <h1>sheiqaway</h1>
-        </button>
-        <nav>
-            <!-- Será preenchido pelo global.js -->
-        </nav>
-    </header>
+    @include('navbar')
     
     <main>
         <section class="content-card" id="details-container">

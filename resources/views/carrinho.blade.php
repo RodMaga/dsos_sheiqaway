@@ -3,21 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="user-authenticated" content="{{ Auth::check() ? 'true' : 'false' }}">
+    @auth
+    <meta name="user-name" content="{{ Auth::user()->name }}">
+    @endauth
     <title>sheiqaway - Carrinho</title>
-    @vite(['resources/css/style.css', 'resources/js/cart.js'])
+    @vite(['resources/css/style.css', 'resources/js/cart.js', 'resources/js/global.js'])
 </head>
 <body>
-
-    <header>
-        <button type="button" id="logo-button" class="header-logo-button">
-            <h1>sheiqaway</h1>
-        </button>
-        <nav>
-            <a href="{{ route('home') }}">Viajar</a>
-            <a href="{{ route('carrinho') }}" id="cart-link" class="current-page">Carrinho (0)</a>
-            <a href="#">Login</a>
-        </nav>
-    </header>
+    @include('navbar')
 
     <main>
         <section class="content-card cart-box">

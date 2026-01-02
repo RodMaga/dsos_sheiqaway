@@ -24,10 +24,8 @@ class CartManager {
             window.GlobalManager.updateCartCount();
         }
         
-        // Verificar se o utilizador está autenticado
-        if (!window.GlobalManager?.isLoggedIn() && this.cart.length === 0) {
-            this.showLoginPrompt();
-        }
+        // Note: Don't show login prompt - users can browse cart without login
+        // They'll be prompted to login when trying to checkout
     }
 
     setupAnimations() {

@@ -3,23 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="user-authenticated" content="{{ Auth::check() ? 'true' : 'false' }}">
+    @auth
+    <meta name="user-name" content="{{ Auth::user()->name }}">
+    @endauth
     <title>sheiqaway - O seu portal de viagens</title>
     @vite(['resources/css/style.css', 'resources/js/script.js', 'resources/js/global.js'])
 </head>
 <body>
+    @include('navbar')
 
-    <header>
-        <button type="button" id="logo-button" class="header-logo-button">
-            <h1>sheiqaway</h1>
-        </button>
-        <nav>
-            <a href="{{ route('home') }}" class="current-page">Viajar</a>
-            <a href="{{ route('carrinho') }}" id="cart-link">Carrinho (0)</a>
-            <a href="#">Login</a>
-        </nav>
-    </header>
-
-        <main>
+    <main>
         <section class="content-card search-box">
             <h2>Encontre a sua próxima viagem</h2>
             <form id="search-form">

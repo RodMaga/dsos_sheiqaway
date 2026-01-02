@@ -5,7 +5,8 @@ document.addEventListener('DOMContentLoaded', () => {
 function initGlobal() {
     setupLogoNavigation();
     updateCartCount();
-    updateHeader();
+    // DON'T call updateHeader() - navbar is server-rendered by Laravel
+    syncAuthWithLaravel();
     restoreTheme();
 }
 
@@ -16,26 +17,27 @@ function setupLogoNavigation() {
     }
 }
 
-function updateHeader() {
-    const nav = document.querySelector('nav');
-    if (!nav) return;
-
-    const user = JSON.parse(localStorage.getItem('user'));
-    const currentPath = window.location.pathname;
+// Sync Laravel session auth with JavaScript
+function syncAuthWithLaravel() {
+    // Check if user is authenticated via Laravel (meta tag or data attribute)
+    const isAuthenticated = document.querySelector('meta[name="user-authenticated"]')?.content === 'true';
+    const userName = document.querySelector('meta[name="user-name"]')?.content;
     
-    let navHTML = `
-        <a href="/" class="${isCurrentPage('/', currentPath) ? 'current-page' : ''}">Viajar</a>
-        <a href="/carrinho" id="cart-link" class="${isCurrentPage('/carrinho', currentPath) ? 'current-page' : ''}">Carrinho (0)</a>
-    `;
-
-    if (user && user.loggedIn) {
-        navHTML += `<a href="/perfil" class="${isCurrentPage('/perfil', currentPath) ? 'current-page' : ''}">O Meu Perfil</a>`;
-        navHTML += `<a href="#" onclick="logout()" style="color: #dc3545; margin-left:10px;">Sair (${user.name})</a>`;
-    } else if (!isCurrentPage('/login', currentPath)) {
-        navHTML += `<a href="/login">Login</a>`;
+    if (isAuthenticated && userName) {
+        // Store in localStorage for JS access
+        localStorage.setItem('user', JSON.stringify({
+            loggedIn: true,
+            name: userName
+        }));
+    } else {
+        // Clear localStorage if not authenticated
+        localStorage.removeItem('user');
     }
-    
-    nav.innerHTML = navHTML;
+}
+
+function updateHeader() {
+    // This function is now disabled - navbar is server-rendered
+    // Just update cart count
     updateCartCount();
 }
 
@@ -99,11 +101,22 @@ function clearCart() {
 
 // 4. AUTENTICAÇÃO
 function logout() {
-    localStorage.removeItem('user');
-    showToast('Sessão terminada com sucesso.', 'info');
-    setTimeout(() => {
-        window.location.href = '/';
-    }, 500);
+    // Use Laravel's logout route
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '/logout';
+    
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+    if (csrfToken) {
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = '_token';
+        csrfInput.value = csrfToken;
+        form.appendChild(csrfInput);
+    }
+    
+    document.body.appendChild(form);
+    form.submit();
 }
 
 function isLoggedIn() {
