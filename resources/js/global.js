@@ -17,21 +17,47 @@ function setupLogoNavigation() {
     }
 }
 
-// Sync Laravel session auth with JavaScript
 function syncAuthWithLaravel() {
-    // Check if user is authenticated via Laravel (meta tag or data attribute)
-    const isAuthenticated = document.querySelector('meta[name="user-authenticated"]')?.content === 'true';
-    const userName = document.querySelector('meta[name="user-name"]')?.content;
+    const authMeta = document.querySelector('meta[name="user-authenticated"]');
+    const nameMeta = document.querySelector('meta[name="user-name"]');
+    
+    const isAuthenticated = authMeta?.content === 'true';
+    const userName = nameMeta?.content;
     
     if (isAuthenticated && userName) {
-        // Store in localStorage for JS access
         localStorage.setItem('user', JSON.stringify({
             loggedIn: true,
-            name: userName
+            name: userName,
+            lastSync: new Date().getTime()
         }));
     } else {
-        // Clear localStorage if not authenticated
+        // Se a meta tag diz que não está logado, limpa obrigatoriamente
         localStorage.removeItem('user');
+    }
+}
+
+async function syncCartWithServer() {
+    if (!isLoggedIn()) return;
+    
+    try {
+        const cart = getCart();
+        if (cart.length === 0) return;
+        
+        // Sincronizar com servidor
+        const response = await fetch('/api/user/cart/sync', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+            },
+            body: JSON.stringify({ cart: cart })
+        });
+        
+        if (response.ok) {
+            console.log('Carrinho sincronizado com servidor');
+        }
+    } catch (error) {
+        console.error('Erro ao sincronizar carrinho:', error);
     }
 }
 
@@ -46,14 +72,11 @@ function isCurrentPage(pageName, currentPath) {
            (pageName === '/' && currentPath === '/');
 }
 
-// 3. GERENCIAMENTO DO CARRINHO
 function updateCartCount() {
     const cart = JSON.parse(localStorage.getItem('shoppingCart')) || [];
-    const cartLinks = document.querySelectorAll('#cart-link');
+    const cartLinks = document.querySelectorAll('.cart-link'); // Alterado para class
     cartLinks.forEach(link => {
-        if (link) {
-            link.textContent = `Carrinho (${cart.length})`;
-        }
+        link.textContent = `Carrinho (${cart.length})`;
     });
     return cart.length;
 }
@@ -78,6 +101,10 @@ function addToCart(trip) {
     localStorage.setItem('shoppingCart', JSON.stringify(cart));
     updateCartCount();
     showToast('Viagem adicionada ao carrinho!', 'success');
+    
+    // Sincronizar com servidor se estiver logado
+    syncCartWithServer();
+    
     return true;
 }
 
@@ -106,7 +133,7 @@ function logout() {
     form.method = 'POST';
     form.action = '/logout';
     
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
     if (csrfToken) {
         const csrfInput = document.createElement('input');
         csrfInput.type = 'hidden';

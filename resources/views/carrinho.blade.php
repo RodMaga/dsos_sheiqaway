@@ -41,14 +41,26 @@
                         <strong id="cart-total">€ 0.00</strong>
                     </div>
                     <button class="checkout-button">Finalizar Compra</button>
-                    <a href="index.html" class="back-link">Continuar a pesquisar</a>
+                    <a href="{{ route('home') }}" class="back-link">Continuar a pesquisar</a>
                 </div>
             </div>
         </section>
     </main>
-
     <footer>
         <p>&copy; 2025 sheiqaway. Trabalho Prático DSOS.</p>
     </footer>
+
+    <script>
+    // Passar CSRF token para JavaScript
+    window.csrfToken = "{{ csrf_token() }}";
+    
+    // Verificar se há mensagens de sessão
+    @if(session('checkout_success'))
+        window.checkoutSuccess = {
+            message: "{{ session('checkout_success') }}",
+            ticketCode: "{{ session('ticket_code') }}"
+        };
+    @endif
+</script>
 </body>
 </html>

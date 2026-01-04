@@ -429,3 +429,85 @@ footer {
     color: var(--text-secondary);
     font-size: 0.9em;
 }
+
+/* Variáveis para Modo Escuro */
+body.dark-mode {
+    --bg-body: #121212;
+    --bg-white: #1e1e1e;
+    --text-primary: #f8f9fa;
+    --text-secondary: #b0b0b0;
+    --border-color: #333333;
+    --primary-light: #1a2a40;
+}
+
+/* Ajustes finos para contraste no modo escuro */
+body.dark-mode .trip-card, 
+body.dark-mode .content-card,
+body.dark-mode .cart-summary {
+    border-color: var(--border-color);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+
+body.dark-mode header {
+    background-color: #1a1a1a;
+    border-bottom: 1px solid #333;
+}
+
+body.dark-mode input, 
+body.dark-mode select {
+    background-color: #2d2d2d;
+    color: white;
+    border-color: #444;
+}
+
+body.dark-mode .suggestion-item:hover {
+    background-color: var(--primary-light);
+}
+
+/* Adicionar ao style.css */
+.availability-warning {
+    animation: pulseWarning 1.5s infinite;
+}
+
+@keyframes pulseWarning {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+}
+
+.checkout-processing {
+    position: relative;
+}
+
+.checkout-processing::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.stock-low {
+    color: #dc3545;
+    font-weight: 600;
+    animation: blink 1s infinite;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.confirmation-animation {
+    animation: confetti 2s ease-out;
+}
+
+@keyframes confetti {
+    0% { transform: translateY(-20px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+}
