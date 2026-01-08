@@ -19,29 +19,42 @@ class AuthenticatedSessionController extends Controller
         return view('login');
     }
 
+    
+
     /**
      * Handle an incoming authentication request.
      */
-    public function store(LoginRequest $request): RedirectResponse
-    {
-        $request->authenticate();
+  // app/Http/Controllers/Auth/AuthenticatedSessionController.php
 
-        $request->session()->regenerate();
+public function store(LoginRequest $request)
+{
+    $request->authenticate(); //
+    $request->session()->regenerate(); //
 
-        return redirect()->intended(route('dashboard', absolute: false));
+    // Criamos o token logo aqui. 
+    // Se o pedido for AJAX/JSON, enviamos o token de volta.
+    if ($request->wantsJson()) {
+        $token = $request->user()->createToken('login_token')->plainTextToken;
+        return response()->json(['token' => $token]);
     }
+
+    return redirect()->intended(route('dashboard')); //
+}
 
     /**
      * Destroy an authenticated session.
      */
     public function destroy(Request $request): RedirectResponse
-    {
-        Auth::guard('web')->logout();
-
-        $request->session()->invalidate();
-
-        $request->session()->regenerateToken();
-
-        return redirect('/');
+{
+    // Revogar o token atual do utilizador (se existir)
+    if ($request->user()) {
+        $request->user()->currentAccessToken()->delete();
     }
+
+    Auth::guard('web')->logout();
+    $request->session()->invalidate();
+    $request->session()->regenerateToken();
+
+    return redirect('/');
+}
 }

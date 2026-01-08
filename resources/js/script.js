@@ -20,34 +20,31 @@ class SearchManager {
         this.showAllTripsInitially();
     }
 
+    // resources/js/script.js
+
     async loadData() {
         try {
-            // Carregar viagens
-            const tripsResponse = await fetch('/api/trips');
-            if (!tripsResponse.ok) throw new Error('Falha ao carregar viagens');
+            // Obter o token guardado no login
+            const token = localStorage.getItem('auth_token');
+
+            const headers = {
+                'Accept': 'application/json',
+                'Authorization': `Bearer ${token}` // Envia o token para a API
+            };
+
+            const tripsResponse = await fetch('/api/trips', { headers });
+            if (!tripsResponse.ok) throw new Error('Acesso negado ou erro na API');
             this.allTrips = await tripsResponse.json();
 
-            // Carregar companhias
-            const providersResponse = await fetch('/api/providers');
+            const providersResponse = await fetch('/api/providers', { headers });
             if (providersResponse.ok) {
                 this.allProviders = await providersResponse.json();
-                this.allProviders.forEach(p => {
-                    this.providerMap[p.id] = p.name;
-                });
+                // ... resto da lógica de mapeamento
             }
-
-            // Extrair localizações únicas
-            const locations = new Set();
-            this.allTrips.forEach(trip => {
-                locations.add(trip.from);
-                locations.add(trip.to);
-            });
-            this.allLocations = [...locations].sort();
-
-            console.log(`Carregados ${this.allTrips.length} viagens e ${this.allLocations.length} localizações`);
         } catch (error) {
-            console.error('Erro ao carregar dados:', error);
-            this.showError('Não foi possível carregar os dados. Por favor, recarregue a página.');
+            console.error('Erro de autenticação:', error);
+            // Opcional: redirecionar para login se o token falhar
+            // window.location.href = '/login';
         }
     }
 
