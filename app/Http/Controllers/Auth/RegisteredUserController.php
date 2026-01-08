@@ -8,6 +8,7 @@ use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
 use Illuminate\View\View;
@@ -31,15 +32,24 @@ class RegisteredUserController extends Controller
     {
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
+            'email' => ['required', 'string', 'lowercase', 'email', 'max:255'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'phone' => ['required', 'string', 'max:20'],
         ]);
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
+        // Call the stored procedure to insert user
+        DB::statement('CALL InsertUser(?, ?, ?, ?)', [
+            $request->name,
+            $request->email,
+            Hash::make($request->password),
+            $request->phone
         ]);
+
+        // Get the ID of the newly inserted user
+        $userId = DB::select('SELECT LAST_INSERT_ID() as id')[0]->id;
+
+        // Retrieve the user model
+        $user = User::find($userId);
 
         event(new Registered($user));
 

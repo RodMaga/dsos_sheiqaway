@@ -56,6 +56,22 @@
                 </div>
 
                 <div class="form-group">
+                    <label for="phone">Telemóvel</label>
+                    <input 
+                        type="tel" 
+                        id="phone" 
+                        name="phone" 
+                        value="{{ old('phone') }}" 
+                        placeholder="+351 912 345 678"
+                        required 
+                        autocomplete="tel"
+                    >
+                    @error('phone')
+                        <span class="error-message">{{ $message }}</span>
+                    @enderror
+                </div>
+
+                <div class="form-group">
                     <label for="password">Senha</label>
                     <input 
                         type="password" 
