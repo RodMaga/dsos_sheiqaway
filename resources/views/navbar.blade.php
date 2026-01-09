@@ -5,7 +5,7 @@
     <nav>
     @auth
         {{-- Links para utilizadores LOGADOS --}}
-        <a href="{{ route('home') }}">Viajar</a>
+        <a href="{{ route('viagens') }}">Viajar</a>
         <a href="{{ route('carrinho') }}">Carrinho</a>
         <a href="{{ route('dashboard') }}">Dashboard</a>
         <form method="POST" action="{{ route('logout') }}">

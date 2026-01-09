@@ -16,6 +16,11 @@ use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 
+
+// ------------------- RESERVAS -------------------
+use App\Http\Controllers\ReservationController;
+Route::post('/reservar', [ReservationController::class, 'store'])->name('reservar.store');
+
 // ------------------- ROTAS PÚBLICAS -------------------
 Route::get('/', function () {
     return redirect()->route('login');
@@ -46,6 +51,7 @@ Route::middleware('auth')->group(function () {
 // ------------------- ROTAS PROTEGIDAS (APÓS LOGIN) -------------------
 Route::middleware(['auth'])->group(function () {
     // Páginas do Utilizador
+    Route::get('/viagens', function () { return view('viagens'); })->name('viagens');
     Route::get('/dashboard', function () { return view('dashboard'); })->name('dashboard');
     Route::get('/carrinho', function () { return view('carrinho'); })->name('carrinho');
     Route::get('/detalhes/{id}', function ($id) { return view('detalhes', ['tripId' => $id]); })->name('detalhes');

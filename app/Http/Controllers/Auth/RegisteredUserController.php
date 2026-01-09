@@ -52,12 +52,8 @@ class RegisteredUserController extends Controller
         $user = User::find($userId);
 
         event(new Registered($user));
-
-    Auth::login($user);
-
-    // Opcional: Se quiser gerar um token logo no registo para o JS
-    // $token = $user->createToken('auth_token')->plainTextToken;
-
-    return redirect(route('dashboard', absolute: false));
+    // Não autentica automaticamente após registro
+    // Redireciona para a página de login
+    return redirect(route('login'));
 }
 }

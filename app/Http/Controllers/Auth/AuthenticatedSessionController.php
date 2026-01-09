@@ -48,7 +48,10 @@ public function store(LoginRequest $request)
 {
     // Revogar o token atual do utilizador (se existir)
     if ($request->user()) {
-        $request->user()->currentAccessToken()->delete();
+        $token = $request->user()->currentAccessToken();
+        if ($token) {
+            $token->delete();
+        }
     }
 
     Auth::guard('web')->logout();
