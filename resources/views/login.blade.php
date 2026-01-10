@@ -9,7 +9,7 @@
     <meta name="user-name" content="{{ Auth::user()->name }}">
     @endauth
     <title>sheiqaway - Login</title>
-    @vite(['resources/css/style.css', 'resources/css/login.css', 'resources/js/global.js'])
+    @vite(['resources/css/pages.css', 'resources/js/global.js'])
 </head>
 <body>
     @include('navbar')

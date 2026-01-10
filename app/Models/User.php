@@ -15,7 +15,7 @@ class User extends Authenticatable
      */
     public function getAuthPassword()
     {
-        return $this->password_hash;
+        return $this->password;
     }
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, HasApiTokens;
@@ -25,7 +25,7 @@ class User extends Authenticatable
      *
      * @var string
      */
-    protected $table = 'Users';
+    protected $table = 'users';
 
     /**
      * The primary key associated with the table.

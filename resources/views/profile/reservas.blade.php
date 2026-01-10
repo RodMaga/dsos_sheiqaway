@@ -159,25 +159,102 @@
     </footer>
     
     <script>
-        // Carregar histórico do localStorage (simulação - em produção viria da API)
+        // Carregar reservas da API
         function loadReservas() {
-            const history = JSON.parse(localStorage.getItem('purchaseHistory')) || [];
+            fetch('/api/reservas', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && data.reservas && data.reservas.length > 0) {
+                    // Buscar detalhes das viagens da API externa
+                    fetch('https://vs-gate.dei.isep.ipp.pt:10923/api/viagens')
+                        .then(res => res.json())
+                        .then(viagens => {
+                            // Converter reservas da base de dados para o formato esperado
+                            const history = data.reservas.map(reserva => {
+                                // Encontrar a viagem correspondente
+                                const viagem = Array.isArray(viagens) ? viagens.find(v => v.id === reserva.trip_id) : null;
+                                
+                                return {
+                                    ticketCode: reserva.ticket_code || 'RES-' + reserva.id,
+                                    purchaseDate: new Date(reserva.created_at).toLocaleDateString('pt-PT'),
+                                    purchaseTime: new Date(reserva.created_at).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }),
+                                    status: reserva.status || 'confirmado',
+                                    passengerName: reserva.passenger_name,
+                                    bookingReference: reserva.booking_reference || reserva.id.toString(),
+                                    from: viagem ? viagem.origem : 'Origem',
+                                    to: viagem ? viagem.destino : 'Destino',
+                                    date: viagem ? new Date(viagem.data_partida).toLocaleDateString('pt-PT') : new Date(reserva.created_at).toLocaleDateString('pt-PT'),
+                                    depart: viagem ? new Date(viagem.data_partida).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }) : new Date(reserva.created_at).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }),
+                                    durationMin: viagem ? viagem.duracao_min : 0,
+                                    price: { base: parseFloat(reserva.price) || 0 },
+                                    providerId: viagem ? viagem.companhia : 'N/A'
+                                };
+                            });
+                            renderReservasFromHistory(history);
+                        })
+                        .catch(err => {
+                            console.error('Erro ao buscar detalhes das viagens:', err);
+                            // Usar dados básicos se falhar ao buscar viagens
+                            const history = data.reservas.map(reserva => ({
+                                ticketCode: reserva.ticket_code || 'RES-' + reserva.id,
+                                purchaseDate: new Date(reserva.created_at).toLocaleDateString('pt-PT'),
+                                purchaseTime: new Date(reserva.created_at).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }),
+                                status: reserva.status || 'confirmado',
+                                passengerName: reserva.passenger_name,
+                                bookingReference: reserva.booking_reference || reserva.id.toString(),
+                                from: 'Origem',
+                                to: 'Destino',
+                                date: new Date(reserva.created_at).toLocaleDateString('pt-PT'),
+                                depart: new Date(reserva.created_at).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }),
+                                durationMin: 0,
+                                price: { base: parseFloat(reserva.price) || 0 },
+                                providerId: 'N/A'
+                            }));
+                            renderReservasFromHistory(history);
+                        });
+                } else {
+                    showNoReservas();
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao carregar reservas:', error);
+                // Fallback para localStorage se a API falhar
+                const history = JSON.parse(localStorage.getItem('purchaseHistory')) || [];
+                if (history.length > 0) {
+                    renderReservasFromHistory(history);
+                } else {
+                    showNoReservas();
+                }
+            });
+        }
+        
+        function showNoReservas() {
+            document.getElementById('reservas-container').innerHTML = `
+                <div class="no-reservas">
+                    <div class="no-reservas-icon">🎫</div>
+                    <h3 style="color: var(--text-secondary); margin-bottom: 15px;">Ainda não tem reservas</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 25px; max-width: 500px; margin: 0 auto 30px;">
+                        Assim que fizer uma reserva, ela aparecerá aqui.
+                        Pode consultar os seus bilhetes e detalhes das viagens a qualquer momento.
+                    </p>
+                    <a href="{{ route('home') }}" class="search-button" style="display: inline-block; padding: 12px 24px;">
+                        Explorar Viagens
+                    </a>
+                </div>
+            `;
+        }
+        
+        function renderReservasFromHistory(history) {
             
             // Se não tiver reservas, mostrar mensagem
             if (history.length === 0) {
-                document.getElementById('reservas-container').innerHTML = `
-                    <div class="no-reservas">
-                        <div class="no-reservas-icon">🎫</div>
-                        <h3 style="color: var(--text-secondary); margin-bottom: 15px;">Ainda não tem reservas</h3>
-                        <p style="color: var(--text-secondary); margin-bottom: 25px; max-width: 500px; margin: 0 auto 30px;">
-                            Assim que fizer uma reserva através do carrinho, ela aparecerá aqui.
-                            Pode consultar os seus bilhetes e detalhes das viagens a qualquer momento.
-                        </p>
-                        <a href="{{ route('home') }}" class="search-button" style="display: inline-block; padding: 12px 24px;">
-                            Explorar Viagens
-                        </a>
-                    </div>
-                `;
+                showNoReservas();
                 return;
             }
             
