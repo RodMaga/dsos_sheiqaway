@@ -26,7 +26,7 @@ Route::middleware('auth')->group(function () {
 
 // ------------------- RESERVAS -------------------
 use App\Http\Controllers\ReservationController;
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'verified', 'validate.reservation'])->group(function () {
     Route::get('/api/reservas', [ReservationController::class, 'index'])->name('reservas.index');
     Route::post('/reservar', [ReservationController::class, 'store'])->name('reservar.store');
     Route::post('/reservar-multiplas', [ReservationController::class, 'storeMultiple'])->name('reservar.multiple');

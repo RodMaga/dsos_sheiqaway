@@ -33,7 +33,7 @@ class RegisteredUserController extends Controller
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users'],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'password' => ['required', 'confirmed', new \App\Rules\StrongPassword()],
             'phone' => ['required', 'string', 'max:20'],
         ]);
 
@@ -52,7 +52,9 @@ class RegisteredUserController extends Controller
             // Retrieve the user model
             $user = User::find($userId);
 
-            event(new Registered($user));
+            if ($user) {
+                event(new Registered($user));
+            }
             
             return redirect(route('login'))->with('status', 'Conta criada! Verifique seu email.');
         } catch (\Exception $e) {
