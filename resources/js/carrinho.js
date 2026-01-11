@@ -105,6 +105,13 @@ function removerItem(index) {
 function finalizarCompra() {
     const carrinho = JSON.parse(localStorage.getItem('carrinho') || '[]');
     
+    // Desabilitar botão para evitar cliques múltiplos
+    const btnFinalizar = document.querySelector('.btn-finalizar');
+    if (btnFinalizar.disabled) return;
+    btnFinalizar.disabled = true;
+    btnFinalizar.textContent = 'Processando...';
+    btnFinalizar.style.opacity = '0.6';
+    
     const reservas = [];
     let todosPreenchidos = true;
     
@@ -129,6 +136,10 @@ function finalizarCompra() {
     });
     
     if (!todosPreenchidos) {
+        btnFinalizar.disabled = false;
+        btnFinalizar.textContent = 'Finalizar Compra';
+        btnFinalizar.style.opacity = '1';
+        
         const msg = document.createElement('div');
         msg.style.cssText = 'position:fixed;top:20px;right:20px;background:#dc2626;color:white;padding:1rem 1.5rem;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.2);z-index:9999;';
         msg.textContent = 'Por favor, preencha o nome de todos os passageiros!';
@@ -175,6 +186,10 @@ function finalizarCompra() {
     })
     .catch(error => {
         console.error('Erro:', error);
+        btnFinalizar.disabled = false;
+        btnFinalizar.textContent = 'Finalizar Compra';
+        btnFinalizar.style.opacity = '1';
+        
         if (!error.message.includes('login')) {
             const msg = document.createElement('div');
             msg.style.cssText = 'position:fixed;top:20px;right:20px;background:#dc2626;color:white;padding:1rem 1.5rem;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.2);z-index:9999;';

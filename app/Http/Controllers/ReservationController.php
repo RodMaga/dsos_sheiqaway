@@ -55,6 +55,24 @@ class ReservationController extends Controller
                 'price' => 'required|numeric|min:0',
             ]);
 
+            // Verificar lugares disponíveis
+            $response = \Http::withoutVerifying()->get("https://vs-gate.dei.isep.ipp.pt:10923/api/viagens");
+            $viagens = $response->json();
+            $viagem = collect($viagens)->firstWhere('id', (int)$request->trip_id);
+            
+            $capacidadeMaxima = $viagem['capacidade'] ?? 50;
+            
+            $lugaresOcupados = Reservation::where('trip_id', $request->trip_id)
+                ->where('status', 'confirmado')
+                ->count();
+            
+            if ($lugaresOcupados >= $capacidadeMaxima) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Viagem lotada. Não há lugares disponíveis.'
+                ], 400);
+            }
+
             $reservation = new Reservation();
             $reservation->user_id = $userId;
             $reservation->trip_id = $request->trip_id;
@@ -151,6 +169,28 @@ class ReservationController extends Controller
             DB::beginTransaction();
 
             foreach ($request->reservas as $reservaData) {
+                // Buscar capacidade da API externa
+                $response = \Http::withoutVerifying()->get("https://vs-gate.dei.isep.ipp.pt:10923/api/viagens");
+                $viagens = $response->json();
+                $viagem = collect($viagens)->firstWhere('id', (int)$reservaData['trip_id']);
+                
+                $capacidadeMaxima = $viagem['capacidade'] ?? 50;
+                
+                // Verificar lugares disponíveis para esta viagem
+                $lugaresOcupados = Reservation::where('trip_id', $reservaData['trip_id'])
+                    ->where('status', 'confirmado')
+                    ->count();
+                
+                $lugaresDisponiveis = $capacidadeMaxima - $lugaresOcupados;
+                
+                if ($reservaData['quantity'] > $lugaresDisponiveis) {
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Apenas {$lugaresDisponiveis} lugar(es) disponível(eis) para a viagem {$reservaData['trip_id']}."
+                    ], 400);
+                }
+                
                 $totalAmount += $reservaData['price'] * $reservaData['quantity'];
                 
                 for ($i = 0; $i < $reservaData['quantity']; $i++) {
@@ -198,6 +238,42 @@ class ReservationController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao criar reservas. Por favor, tente novamente.'
+            ], 500);
+        }
+    }
+
+    public function lugaresDisponiveis($tripId)
+    {
+        try {
+            // Buscar viagem da API externa
+            $response = \Http::withoutVerifying()->get("https://vs-gate.dei.isep.ipp.pt:10923/api/viagens");
+            $viagens = $response->json();
+            $viagem = collect($viagens)->firstWhere('id', (int)$tripId);
+            
+            if (!$viagem) {
+                return response()->json(['success' => false, 'message' => 'Viagem não encontrada'], 404);
+            }
+            
+            $capacidadeMaxima = $viagem['capacidade'] ?? 50;
+            
+            $lugaresOcupados = Reservation::where('trip_id', $tripId)
+                ->where('status', 'confirmado')
+                ->count();
+            
+            $lugaresDisponiveis = $capacidadeMaxima - $lugaresOcupados;
+            
+            return response()->json([
+                'success' => true,
+                'trip_id' => $tripId,
+                'lugares_ocupados' => $lugaresOcupados,
+                'lugares_disponiveis' => max(0, $lugaresDisponiveis),
+                'capacidade_maxima' => $capacidadeMaxima
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Erro ao verificar lugares disponíveis: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao verificar disponibilidade.'
             ], 500);
         }
     }

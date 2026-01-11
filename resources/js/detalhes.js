@@ -45,6 +45,14 @@ async function loadTripData() {
         
         if (!viagem) throw new Error('Viagem não encontrada');
         
+        // Buscar lugares disponíveis da API local
+        const lugaresResponse = await fetch(`/api/viagens/${tripId}/lugares-disponiveis`);
+        const lugaresData = await lugaresResponse.json();
+        
+        if (lugaresData.success) {
+            viagem.lugares_disponiveis = lugaresData.lugares_disponiveis;
+        }
+        
         return viagem;
     } catch (error) {
         console.error('Erro ao carregar viagem:', error);

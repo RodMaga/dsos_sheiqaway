@@ -23,6 +23,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/api/reservas', [ReservationController::class, 'index'])->name('reservas.index');
     Route::post('/reservar', [ReservationController::class, 'store'])->name('reservar.store');
     Route::post('/reservar-multiplas', [ReservationController::class, 'storeMultiple'])->name('reservar.multiple');
+    Route::get('/api/viagens/{tripId}/lugares-disponiveis', [ReservationController::class, 'lugaresDisponiveis'])->name('viagens.lugares');
 });
 
 // ------------------- ROTAS PÚBLICAS -------------------

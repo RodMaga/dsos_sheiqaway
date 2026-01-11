@@ -188,7 +188,29 @@ function renderViagens(viagens) {
         const origem = getCityName(decodeHTML(viagem.origem || ''));
         const destino = getCityName(decodeHTML(viagem.destino || ''));
         
-        html += `<div class="viagem-card">
+        // Buscar lugares disponíveis da API local
+        fetch(`/api/viagens/${viagem.id}/lugares-disponiveis`)
+            .then(r => r.json())
+            .then(data => {
+                const card = document.querySelector(`[data-trip-id="${viagem.id}"]`);
+                if (card && data.success) {
+                    const lugaresSpan = card.querySelector('.lugares-disponiveis');
+                    const btnReservar = card.querySelector('.btn-reservar');
+                    
+                    lugaresSpan.textContent = `${data.lugares_disponiveis} disponíveis`;
+                    
+                    if (data.lugares_disponiveis === 0) {
+                        lugaresSpan.style.color = '#dc3545';
+                        btnReservar.disabled = true;
+                        btnReservar.textContent = 'Esgotado';
+                        btnReservar.style.opacity = '0.5';
+                    } else if (data.lugares_disponiveis < 5) {
+                        lugaresSpan.style.color = '#ffc107';
+                    }
+                }
+            });
+        
+        html += `<div class="viagem-card" data-trip-id="${viagem.id}">
             <div class="card-header">
                 <h3>${companhia}</h3>
                 <div class="route">${origem} → ${destino}</div>
@@ -203,7 +225,7 @@ function renderViagens(viagens) {
             </div>
             <div class="info-row">
                 <span class="info-label">Lugares:</span>
-                <span class="info-value">${viagem.lugares_disponiveis} disponíveis</span>
+                <span class="info-value lugares-disponiveis">Carregando...</span>
             </div>
             <div class="price-tag">${viagem.preco} ${viagem.moeda}</div>
             <div style="display: flex; gap: 0.5rem;">
