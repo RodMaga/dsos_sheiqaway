@@ -21,8 +21,12 @@ use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\ReservationController;
 Route::middleware('auth')->group(function () {
     Route::get('/api/reservas', [ReservationController::class, 'index'])->name('reservas.index');
+    Route::get('/api/reservas/{id}', [ReservationController::class, 'show'])->name('reservas.show');
     Route::post('/reservar', [ReservationController::class, 'store'])->name('reservar.store');
     Route::post('/reservar-multiplas', [ReservationController::class, 'storeMultiple'])->name('reservar.multiple');
+    Route::put('/api/reservas/{id}', [ReservationController::class, 'update'])->name('reservas.update');
+    Route::post('/api/reservas/{id}/cancelar', [ReservationController::class, 'cancel'])->name('reservas.cancel');
+    Route::delete('/api/reservas/{id}', [ReservationController::class, 'destroy'])->name('reservas.destroy');
     Route::get('/api/viagens/{tripId}/lugares-disponiveis', [ReservationController::class, 'lugaresDisponiveis'])->name('viagens.lugares');
 });
 

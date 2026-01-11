@@ -154,12 +154,6 @@ function applyFilters() {
     renderViagens(filtered);
 }
 
-window.clearFilters = clearFilters;
-window.adicionarAoCarrinho = adicionarAoCarrinho;
-window.fecharModal = fecharModal;
-window.confirmarQuantidade = confirmarQuantidade;
-window.atualizarContadorCarrinho = atualizarContadorCarrinho;
-
 function clearFilters() {
     document.getElementById('filter-origem').value = '';
     document.getElementById('filter-destino').value = '';
@@ -168,12 +162,6 @@ function clearFilters() {
     document.getElementById('price-display').textContent = '1000€';
     renderViagens(allViagens);
 }
-
-document.getElementById('filter-data').addEventListener('change', applyFilters);
-document.getElementById('filter-preco').addEventListener('input', function() {
-    document.getElementById('price-display').textContent = this.value + '€';
-    applyFilters();
-});
 
 function renderViagens(viagens) {
     let html = '';
@@ -188,7 +176,6 @@ function renderViagens(viagens) {
         const origem = getCityName(decodeHTML(viagem.origem || ''));
         const destino = getCityName(decodeHTML(viagem.destino || ''));
         
-        // Buscar lugares disponíveis da API local
         fetch(`/api/viagens/${viagem.id}/lugares-disponiveis`)
             .then(r => r.json())
             .then(data => {
@@ -229,7 +216,7 @@ function renderViagens(viagens) {
             </div>
             <div class="price-tag">${viagem.preco} ${viagem.moeda}</div>
             <div style="display: flex; gap: 0.5rem;">
-                <button class="btn-reservar" style="flex: 1;" onclick="adicionarAoCarrinho(${viagem.id}, '${companhia}', '${origem}', '${destino}', ${viagem.preco}, '${viagem.moeda}')">Adicionar ao Carrinho</button>
+                <button class="btn-reservar" style="flex: 1;" onclick="window.adicionarAoCarrinho(${viagem.id}, '${companhia}', '${origem}', '${destino}', ${viagem.preco}, '${viagem.moeda}')">Adicionar ao Carrinho</button>
                 <a href="/detalhes/${viagem.id}" class="btn-detalhes">Ver Detalhes</a>
             </div>
         </div>`;
@@ -238,9 +225,20 @@ function renderViagens(viagens) {
 }
 
 function adicionarAoCarrinho(tripId, companhia, origem, destino, preco, moeda) {
-    viagemTemporaria = { tripId, companhia, origem, destino, preco, moeda };
-    document.getElementById('input-quantidade').value = 1;
-    document.getElementById('modal-quantidade').classList.add('show');
+    fetch(`/api/viagens/${tripId}/lugares-disponiveis`)
+        .then(r => r.json())
+        .then(data => {
+            if (!data.success || data.lugares_disponiveis === 0) {
+                alert('Não há lugares disponíveis para esta viagem.');
+                return;
+            }
+            
+            viagemTemporaria = { tripId, companhia, origem, destino, preco, moeda, lugaresDisponiveis: data.lugares_disponiveis };
+            document.getElementById('input-quantidade').value = 1;
+            document.getElementById('input-quantidade').max = data.lugares_disponiveis;
+            document.getElementById('modal-quantidade').classList.add('show');
+        })
+        .catch(() => alert('Erro ao verificar disponibilidade.'));
 }
 
 function fecharModal(modalId) {
@@ -251,11 +249,23 @@ function confirmarQuantidade() {
     const quantidade = parseInt(document.getElementById('input-quantidade').value);
     if (!quantidade || quantidade < 1) return;
     
+    if (quantidade > viagemTemporaria.lugaresDisponiveis) {
+        alert(`Apenas ${viagemTemporaria.lugaresDisponiveis} lugar(es) disponível(eis).`);
+        return;
+    }
+    
     let carrinho = JSON.parse(localStorage.getItem('carrinho') || '[]');
     
     const itemExistente = carrinho.find(item => item.tripId === viagemTemporaria.tripId);
+    const quantidadeTotal = itemExistente ? parseInt(itemExistente.quantidade) + quantidade : quantidade;
+    
+    if (quantidadeTotal > viagemTemporaria.lugaresDisponiveis) {
+        alert(`Você já tem ${itemExistente.quantidade} bilhete(s) no carrinho. Máximo disponível: ${viagemTemporaria.lugaresDisponiveis}`);
+        return;
+    }
+    
     if (itemExistente) {
-        itemExistente.quantidade = parseInt(itemExistente.quantidade) + quantidade;
+        itemExistente.quantidade = quantidadeTotal;
     } else {
         carrinho.push({
             ...viagemTemporaria,
@@ -281,5 +291,17 @@ function atualizarContadorCarrinho() {
     const badge = document.querySelector('.cart-badge');
     if (badge) badge.textContent = total;
 }
+
+window.clearFilters = clearFilters;
+window.adicionarAoCarrinho = adicionarAoCarrinho;
+window.fecharModal = fecharModal;
+window.confirmarQuantidade = confirmarQuantidade;
+window.atualizarContadorCarrinho = atualizarContadorCarrinho;
+
+document.getElementById('filter-data').addEventListener('change', applyFilters);
+document.getElementById('filter-preco').addEventListener('input', function() {
+    document.getElementById('price-display').textContent = this.value + '€';
+    applyFilters();
+});
 
 atualizarContadorCarrinho();

@@ -4,444 +4,198 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <meta name="user-authenticated" content="{{ Auth::check() ? 'true' : 'false' }}">
-    @auth
-    <meta name="user-name" content="{{ Auth::user()->name }}">
-    @endauth
-    <title>sheiqaway - Minhas Reservas</title>
-    @vite(['resources/css/style.css', 'resources/js/global.js'])
+    <title>Minhas Reservas - Sheiqaway</title>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
-        .reservas-container {
-            margin-top: 20px;
-        }
-        
-        .reserva-card {
-            background: white;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 15px;
-            transition: all 0.2s ease;
-        }
-        
-        .reserva-card:hover {
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        }
-        
-        .reserva-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 15px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid var(--border-color);
-        }
-        
-        .reserva-code {
-            background: var(--primary-color);
-            color: white;
-            padding: 5px 10px;
-            border-radius: 4px;
-            font-family: monospace;
-            font-weight: 600;
-        }
-        
-        .reserva-status {
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.85em;
-            font-weight: 600;
-        }
-        
-        .status-confirmado {
-            background: #d4edda;
-            color: #155724;
-        }
-        
-        .status-pendente {
-            background: #fff3cd;
-            color: #856404;
-        }
-        
-        .status-cancelado {
-            background: #f8d7da;
-            color: #721c24;
-        }
-        
-        .reserva-details {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-        
-        .detail-item {
-            padding: 10px;
-            background: var(--bg-body);
-            border-radius: 6px;
-        }
-        
-        .detail-label {
-            font-size: 0.85em;
-            color: var(--text-secondary);
-            margin-bottom: 5px;
-        }
-        
-        .detail-value {
-            font-weight: 600;
-        }
-        
-        .no-reservas {
-            text-align: center;
-            padding: 50px 20px;
-        }
-        
-        .no-reservas-icon {
-            font-size: 4em;
-            margin-bottom: 20px;
-            color: var(--border-color);
-        }
-        
-        .filters {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 25px;
-            flex-wrap: wrap;
-        }
-        
-        .filter-btn {
-            padding: 8px 16px;
-            background: var(--bg-body);
-            border: 1px solid var(--border-color);
-            border-radius: 20px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        
-        .filter-btn.active {
-            background: var(--primary-color);
-            color: white;
-            border-color: var(--primary-color);
-        }
+        .reserva-card { border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin-bottom: 15px; background: white; }
+        .reserva-card.cancelado { opacity: 0.6; background: #f5f5f5; }
+        .status-badge { padding: 5px 10px; border-radius: 5px; font-size: 12px; font-weight: bold; }
+        .status-confirmado { background: #4caf50; color: white; }
+        .status-cancelado { background: #f44336; color: white; }
+        .btn { padding: 8px 16px; border-radius: 5px; border: none; cursor: pointer; font-size: 14px; }
+        .btn-primary { background: #2196f3; color: white; }
+        .btn-danger { background: #f44336; color: white; }
+        .btn-warning { background: #ff9800; color: white; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); }
+        .modal-content { background: white; margin: 10% auto; padding: 30px; border-radius: 10px; width: 90%; max-width: 500px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .form-group input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
     </style>
 </head>
 <body>
     @include('navbar')
     
-    <main>
-        <section class="content-card">
-            <h2>Minhas Reservas</h2>
-            <p style="color: var(--text-secondary); margin-bottom: 25px;">
-                Aqui pode visualizar todas as suas reservas e bilhetes.
-            </p>
-            
-            <!-- Filtros -->
-            <div class="filters">
-                <button class="filter-btn active" data-filter="all">Todas</button>
-                <button class="filter-btn" data-filter="confirmado">Confirmadas</button>
-                <button class="filter-btn" data-filter="pendente">Pendentes</button>
-                <button class="filter-btn" data-filter="cancelado">Canceladas</button>
-                <button class="filter-btn" data-filter="recente">Recentes</button>
-            </div>
-            
-            <div id="reservas-container" class="reservas-container">
-                <!-- As reservas serão carregadas via JavaScript -->
-                <div id="loading-reservas" style="text-align: center; padding: 40px;">
-                    <div class="loading-spinner" style="width: 40px; height: 40px; margin: 0 auto 15px;"></div>
-                    <p style="color: var(--text-secondary);">A carregar as suas reservas...</p>
-                </div>
-            </div>
-        </section>
-    </main>
+    <div style="max-width: 1200px; margin: 40px auto; padding: 0 20px;">
+        <h1 style="margin-bottom: 30px;">Minhas Reservas</h1>
+        
+        <div id="reservas-container"></div>
+    </div>
 
-    <footer>
-        <p>&copy; 2025 sheiqaway. Trabalho Prático DSOS.</p>
-    </footer>
-    
-    <script>
-        // Carregar reservas da API
-        function loadReservas() {
-            fetch('/api/reservas', {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
-                }
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success && data.reservas && data.reservas.length > 0) {
-                    // Buscar detalhes das viagens da API externa
-                    fetch('https://vs-gate.dei.isep.ipp.pt:10923/api/viagens')
-                        .then(res => res.json())
-                        .then(viagens => {
-                            // Converter reservas da base de dados para o formato esperado
-                            const history = data.reservas.map(reserva => {
-                                // Encontrar a viagem correspondente
-                                const viagem = Array.isArray(viagens) ? viagens.find(v => v.id === reserva.trip_id) : null;
-                                
-                                return {
-                                    ticketCode: reserva.ticket_code || 'RES-' + reserva.id,
-                                    purchaseDate: new Date(reserva.created_at).toLocaleDateString('pt-PT'),
-                                    purchaseTime: new Date(reserva.created_at).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }),
-                                    status: reserva.status || 'confirmado',
-                                    passengerName: reserva.passenger_name,
-                                    bookingReference: reserva.booking_reference || reserva.id.toString(),
-                                    from: viagem ? viagem.origem : 'Origem',
-                                    to: viagem ? viagem.destino : 'Destino',
-                                    date: viagem ? new Date(viagem.data_partida).toLocaleDateString('pt-PT') : new Date(reserva.created_at).toLocaleDateString('pt-PT'),
-                                    depart: viagem ? new Date(viagem.data_partida).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }) : new Date(reserva.created_at).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }),
-                                    durationMin: viagem ? viagem.duracao_min : 0,
-                                    price: { base: parseFloat(reserva.price) || 0 },
-                                    providerId: viagem ? viagem.companhia : 'N/A'
-                                };
-                            });
-                            renderReservasFromHistory(history);
-                        })
-                        .catch(err => {
-                            console.error('Erro ao buscar detalhes das viagens:', err);
-                            // Usar dados básicos se falhar ao buscar viagens
-                            const history = data.reservas.map(reserva => ({
-                                ticketCode: reserva.ticket_code || 'RES-' + reserva.id,
-                                purchaseDate: new Date(reserva.created_at).toLocaleDateString('pt-PT'),
-                                purchaseTime: new Date(reserva.created_at).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }),
-                                status: reserva.status || 'confirmado',
-                                passengerName: reserva.passenger_name,
-                                bookingReference: reserva.booking_reference || reserva.id.toString(),
-                                from: 'Origem',
-                                to: 'Destino',
-                                date: new Date(reserva.created_at).toLocaleDateString('pt-PT'),
-                                depart: new Date(reserva.created_at).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }),
-                                durationMin: 0,
-                                price: { base: parseFloat(reserva.price) || 0 },
-                                providerId: 'N/A'
-                            }));
-                            renderReservasFromHistory(history);
-                        });
-                } else {
-                    showNoReservas();
-                }
-            })
-            .catch(error => {
-                console.error('Erro ao carregar reservas:', error);
-                // Fallback para localStorage se a API falhar
-                const history = JSON.parse(localStorage.getItem('purchaseHistory')) || [];
-                if (history.length > 0) {
-                    renderReservasFromHistory(history);
-                } else {
-                    showNoReservas();
-                }
-            });
-        }
-        
-        function showNoReservas() {
-            document.getElementById('reservas-container').innerHTML = `
-                <div class="no-reservas">
-                    <div class="no-reservas-icon">🎫</div>
-                    <h3 style="color: var(--text-secondary); margin-bottom: 15px;">Ainda não tem reservas</h3>
-                    <p style="color: var(--text-secondary); margin-bottom: 25px; max-width: 500px; margin: 0 auto 30px;">
-                        Assim que fizer uma reserva, ela aparecerá aqui.
-                        Pode consultar os seus bilhetes e detalhes das viagens a qualquer momento.
-                    </p>
-                    <a href="{{ route('home') }}" class="search-button" style="display: inline-block; padding: 12px 24px;">
-                        Explorar Viagens
-                    </a>
+    <!-- Modal Editar -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <h2>Editar Reserva</h2>
+            <form id="editForm">
+                <input type="hidden" id="edit-id">
+                <div class="form-group">
+                    <label>Nome do Passageiro</label>
+                    <input type="text" id="edit-passenger-name" required>
                 </div>
-            `;
-        }
-        
-        function renderReservasFromHistory(history) {
-            
-            // Se não tiver reservas, mostrar mensagem
-            if (history.length === 0) {
-                showNoReservas();
-                return;
-            }
-            
-            // Agrupar por código de bilhete
-            const reservasPorTicket = {};
-            history.forEach(reserva => {
-                if (!reservasPorTicket[reserva.ticketCode]) {
-                    reservasPorTicket[reserva.ticketCode] = {
-                        ticketCode: reserva.ticketCode,
-                        purchaseDate: reserva.purchaseDate,
-                        purchaseTime: reserva.purchaseTime,
-                        status: reserva.status,
-                        passengerName: reserva.passengerName,
-                        bookingReference: reserva.bookingReference,
-                        viagens: []
-                    };
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                    <button type="button" class="btn" onclick="closeEditModal()">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let reservas = [];
+
+        async function carregarReservas() {
+            try {
+                const response = await fetch('/api/reservas');
+                const data = await response.json();
+                
+                if (data.success) {
+                    reservas = data.reservas;
+                    renderReservas();
                 }
-                reservasPorTicket[reserva.ticketCode].viagens.push(reserva);
-            });
-            
-            // Converter para array e ordenar por data (mais recente primeiro)
-            const reservas = Object.values(reservasPorTicket).sort((a, b) => {
-                return new Date(b.purchaseDate + ' ' + b.purchaseTime) - new Date(a.purchaseDate + ' ' + a.purchaseTime);
-            });
-            
-            // Renderizar reservas
-            renderReservas(reservas);
+            } catch (error) {
+                console.error('Erro ao carregar reservas:', error);
+            }
         }
-        
-        function renderReservas(reservas) {
+
+        function renderReservas() {
             const container = document.getElementById('reservas-container');
             
-            // Calcular totais
-            const totalReservas = reservas.length;
-            const totalViagens = reservas.reduce((sum, reserva) => sum + reserva.viagens.length, 0);
-            const totalGasto = reservas.reduce((sum, reserva) => {
-                return sum + reserva.viagens.reduce((sumViagem, viagem) => sumViagem + viagem.price.base, 0);
-            }, 0);
-            
-            container.innerHTML = `
-                <div style="background: var(--bg-body); padding: 15px; border-radius: 8px; margin-bottom: 25px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
-                    <div style="text-align: center;">
-                        <div style="font-size: 1.8em; font-weight: 700; color: var(--primary-color);">${totalReservas}</div>
-                        <div style="font-size: 0.9em; color: var(--text-secondary);">Reservas</div>
-                    </div>
-                    <div style="text-align: center;">
-                        <div style="font-size: 1.8em; font-weight: 700; color: var(--accent-color);">${totalViagens}</div>
-                        <div style="font-size: 0.9em; color: var(--text-secondary);">Viagens</div>
-                    </div>
-                    <div style="text-align: center;">
-                        <div style="font-size: 1.8em; font-weight: 700; color: #28a745;">€ ${totalGasto.toFixed(2)}</div>
-                        <div style="font-size: 0.9em; color: var(--text-secondary);">Total gasto</div>
-                    </div>
-                </div>
-                
-                <div id="reservas-list">
-                    ${reservas.map((reserva, index) => `
-                        <div class="reserva-card" data-status="${reserva.status}" data-date="${reserva.purchaseDate}">
-                            <div class="reserva-header">
-                                <div>
-                                    <h4 style="margin: 0 0 5px 0;">Reserva #${index + 1}</h4>
-                                    <div style="font-size: 0.9em; color: var(--text-secondary);">
-                                        ${reserva.purchaseDate} às ${reserva.purchaseTime}
-                                    </div>
-                                </div>
-                                <div style="text-align: right;">
-                                    <div class="reserva-code">${reserva.ticketCode}</div>
-                                    <div class="reserva-status status-${reserva.status}" style="margin-top: 8px;">
-                                        ${reserva.status.charAt(0).toUpperCase() + reserva.status.slice(1)}
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="reserva-details">
-                                <div class="detail-item">
-                                    <div class="detail-label">Passageiro</div>
-                                    <div class="detail-value">${reserva.passengerName}</div>
-                                </div>
-                                <div class="detail-item">
-                                    <div class="detail-label">Referência</div>
-                                    <div class="detail-value">${reserva.bookingReference}</div>
-                                </div>
-                                <div class="detail-item">
-                                    <div class="detail-label">Número de Viagens</div>
-                                    <div class="detail-value">${reserva.viagens.length}</div>
-                                </div>
-                                <div class="detail-item">
-                                    <div class="detail-label">Valor Total</div>
-                                    <div class="detail-value" style="color: var(--accent-color);">
-                                        € ${reserva.viagens.reduce((sum, v) => sum + v.price.base, 0).toFixed(2)}
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <h5 style="margin: 15px 0 10px 0; color: var(--text-primary);">Viagens Incluídas:</h5>
-                            <div style="background: var(--bg-body); border-radius: 6px; padding: 15px;">
-                                ${reserva.viagens.map(viagem => `
-                                    <div style="padding: 10px; border-bottom: 1px solid var(--border-color);">
-                                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                                            <div>
-                                                <strong>${viagem.from} → ${viagem.to}</strong>
-                                                <div style="font-size: 0.9em; color: var(--text-secondary);">
-                                                    ${viagem.date} • ${viagem.depart} • ${Math.floor(viagem.durationMin/60)}h ${viagem.durationMin%60}min
-                                                </div>
-                                            </div>
-                                            <div style="text-align: right;">
-                                                <div style="font-weight: 600; color: var(--accent-color);">
-                                                    € ${viagem.price.base.toFixed(2)}
-                                                </div>
-                                                <div style="font-size: 0.85em; color: var(--text-secondary);">
-                                                    ${viagem.providerId}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                `).join('')}
-                            </div>
-                            
-                            <div style="display: flex; gap: 10px; margin-top: 20px;">
-                                <button class="secondary-button" style="padding: 8px 15px; font-size: 0.9em;">
-                                    📄 Ver Bilhete
-                                </button>
-                                <button class="secondary-button" style="padding: 8px 15px; font-size: 0.9em;">
-                                    📧 Reenviar E-mail
-                                </button>
-                                ${reserva.status === 'confirmado' ? `
-                                    <button class="secondary-button" style="padding: 8px 15px; font-size: 0.9em; color: #dc3545; border-color: #dc3545;">
-                                        ❌ Cancelar
-                                    </button>
-                                ` : ''}
-                            </div>
+            if (reservas.length === 0) {
+                container.innerHTML = '<p>Não tem reservas.</p>';
+                return;
+            }
+
+            container.innerHTML = reservas.map(r => `
+                <div class="reserva-card ${r.status}">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div>
+                            <h3>Reserva #${r.booking_reference}</h3>
+                            <p><strong>Passageiro:</strong> ${r.passenger_name}</p>
+                            <p><strong>Viagem ID:</strong> ${r.trip_id}</p>
+                            <p><strong>Preço:</strong> €${parseFloat(r.price).toFixed(2)}</p>
+                            <p><strong>Data:</strong> ${new Date(r.created_at).toLocaleDateString('pt-PT')}</p>
+                            <span class="status-badge status-${r.status}">${r.status.toUpperCase()}</span>
                         </div>
-                    `).join('')}
+                        <div style="display: flex; gap: 10px; flex-direction: column;">
+                            ${r.status !== 'cancelado' ? `
+                                <button class="btn btn-warning" onclick="editarReserva(${r.id})">Editar</button>
+                                <button class="btn btn-danger" onclick="cancelarReserva(${r.id})">Cancelar</button>
+                            ` : ''}
+                            <button class="btn btn-danger" onclick="eliminarReserva(${r.id})">Eliminar</button>
+                        </div>
+                    </div>
                 </div>
-            `;
-            
-            // Configurar filtros
-            setupFilters();
+            `).join('');
         }
-        
-        function setupFilters() {
-            const filterBtns = document.querySelectorAll('.filter-btn');
-            const reservaCards = document.querySelectorAll('.reserva-card');
+
+        function editarReserva(id) {
+            const reserva = reservas.find(r => r.id === id);
+            if (!reserva) return;
+
+            document.getElementById('edit-id').value = reserva.id;
+            document.getElementById('edit-passenger-name').value = reserva.passenger_name;
+            document.getElementById('editModal').style.display = 'block';
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').style.display = 'none';
+        }
+
+        document.getElementById('editForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
             
-            filterBtns.forEach(btn => {
-                btn.addEventListener('click', function() {
-                    // Atualizar botão ativo
-                    filterBtns.forEach(b => b.classList.remove('active'));
-                    this.classList.add('active');
-                    
-                    const filter = this.dataset.filter;
-                    
-                    // Aplicar filtro
-                    reservaCards.forEach(card => {
-                        let show = true;
-                        
-                        switch(filter) {
-                            case 'confirmado':
-                                show = card.dataset.status === 'confirmado';
-                                break;
-                            case 'pendente':
-                                show = card.dataset.status === 'pendente';
-                                break;
-                            case 'cancelado':
-                                show = card.dataset.status === 'cancelado';
-                                break;
-                            case 'recente':
-                                // Mostrar apenas dos últimos 30 dias
-                                const reservaDate = new Date(card.dataset.date);
-                                const thirtyDaysAgo = new Date();
-                                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-                                show = reservaDate >= thirtyDaysAgo;
-                                break;
-                            default: // 'all'
-                                show = true;
-                        }
-                        
-                        card.style.display = show ? 'block' : 'none';
-                    });
+            const id = document.getElementById('edit-id').value;
+            const passengerName = document.getElementById('edit-passenger-name').value;
+
+            try {
+                const response = await fetch(`/api/reservas/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify({ passenger_name: passengerName })
                 });
-            });
-        }
-        
-        // Carregar reservas quando a página carregar
-        document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(loadReservas, 500); // Pequeno delay para efeito visual
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Reserva atualizada com sucesso!');
+                    closeEditModal();
+                    carregarReservas();
+                } else {
+                    alert(data.message || 'Erro ao atualizar reserva');
+                }
+            } catch (error) {
+                console.error('Erro:', error);
+                alert('Erro ao atualizar reserva');
+            }
         });
+
+        async function cancelarReserva(id) {
+            if (!confirm('Tem certeza que deseja cancelar esta reserva?')) return;
+
+            try {
+                const response = await fetch(`/api/reservas/${id}/cancelar`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Reserva cancelada com sucesso!');
+                    carregarReservas();
+                } else {
+                    alert(data.message || 'Erro ao cancelar reserva');
+                }
+            } catch (error) {
+                console.error('Erro:', error);
+                alert('Erro ao cancelar reserva');
+            }
+        }
+
+        async function eliminarReserva(id) {
+            if (!confirm('Tem certeza que deseja eliminar esta reserva? Esta ação não pode ser desfeita.')) return;
+
+            try {
+                const response = await fetch(`/api/reservas/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Reserva eliminada com sucesso!');
+                    carregarReservas();
+                } else {
+                    alert(data.message || 'Erro ao eliminar reserva');
+                }
+            } catch (error) {
+                console.error('Erro:', error);
+                alert('Erro ao eliminar reserva');
+            }
+        }
+
+        carregarReservas();
     </script>
 </body>
 </html>
