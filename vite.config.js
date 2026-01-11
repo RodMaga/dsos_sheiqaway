@@ -6,13 +6,17 @@ export default defineConfig({
         laravel({
             input: [
                 'resources/css/app.css',
-                'resources/css/style.css',
+                'resources/css/pages.css',
                 'resources/css/login.css',
                 'resources/css/register.css',
                 'resources/js/app.js',
                 'resources/js/script.js',
                 'resources/js/global.js',
-                'resources/js/cart.js'
+                'resources/js/cart.js',
+                'resources/js/carrinho.js',
+                'resources/js/dashboard.js',
+                'resources/js/detalhes.js',
+                'resources/js/viagens.js'
             ],
             refresh: true,
         }),

@@ -32,28 +32,35 @@ class RegisteredUserController extends Controller
     {
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255'],
+            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'phone' => ['required', 'string', 'max:20'],
         ]);
 
-        // Call the stored procedure to insert user
-        DB::statement('CALL InsertUser(?, ?, ?, ?)', [
-            $request->name,
-            $request->email,
-            Hash::make($request->password),
-            $request->phone
-        ]);
+        try {
+            // Call the stored procedure to insert user
+            DB::statement('CALL InsertUser(?, ?, ?, ?)', [
+                $request->name,
+                $request->email,
+                Hash::make($request->password),
+                $request->phone
+            ]);
 
-        // Get the ID of the newly inserted user
-        $userId = DB::select('SELECT LAST_INSERT_ID() as id')[0]->id;
+            // Get the ID of the newly inserted user
+            $userId = DB::select('SELECT LAST_INSERT_ID() as id')[0]->id;
 
-        // Retrieve the user model
-        $user = User::find($userId);
+            // Retrieve the user model
+            $user = User::find($userId);
 
-        event(new Registered($user));
-    // Não autentica automaticamente após registro
-    // Redireciona para a página de login
-    return redirect(route('login'));
-}
+            event(new Registered($user));
+            
+            return redirect(route('login'))->with('status', 'Conta criada! Verifique seu email.');
+        } catch (\Exception $e) {
+            if (str_contains($e->getMessage(), 'Duplicate entry')) {
+                return back()->withErrors(['email' => 'Este email já está registrado.'])->withInput();
+            }
+            
+            return back()->withErrors(['error' => 'Erro ao criar conta. Tente novamente.'])->withInput();
+        }
+    }
 }
