@@ -255,4 +255,69 @@ class ReservationController extends Controller
             ], 500);
         }
     }
+
+    public function applyCampaign(Request $request)
+    {
+        try {
+            $request->validate([
+                'price' => 'required|numeric|min:0',
+                'duration' => 'required|integer|min:0',
+                'airline' => 'required|string',
+                'date' => 'required|date',
+            ]);
+
+            $price = $request->price;
+            $duration = $request->duration;
+            $airline = $request->airline;
+            $date = $request->date;
+
+            
+            // Convert ISO datetime to DATE format (YYYY-MM-DD)
+            if (strpos($date, 'T') !== false) {
+                $date = substr($date, 0, 10); // Extract date part only
+            }
+
+            // Log the parameters being sent to the stored procedure
+            Log::info('Calling apply_campaign_to_trip with parameters:', [
+                'price' => $price,
+                'duration' => $duration,
+                'airline' => $airline,
+                'date' => $date
+            ]);
+
+            // Call the stored procedure
+            $result = DB::select('CALL apply_campaign_to_trip(?, ?, ?, ?, @final_price)', [
+                $price,
+                $duration,
+                $airline,
+                $date
+            ]);
+
+            // Get the output parameter
+            $finalPrice = DB::select('SELECT @final_price as final_price')[0]->final_price;
+
+            // Log the result
+            Log::info('apply_campaign_to_trip result:', [
+                'original_price' => $price,
+                'final_price' => $finalPrice,
+                'discount_applied' => $price != $finalPrice
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'original_price' => $price,
+                'final_price' => $finalPrice,
+                'discount_applied' => $price != $finalPrice
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Erro ao aplicar campanha: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao aplicar campanha.',
+                'original_price' => $request->price,
+                'final_price' => $request->price,
+                'discount_applied' => false
+            ], 500);
+        }
+    }
 }

@@ -26,13 +26,21 @@ Route::middleware('auth')->group(function () {
 
 // ------------------- RESERVAS -------------------
 use App\Http\Controllers\ReservationController;
-Route::middleware(['auth', 'verified', 'validate.reservation'])->group(function () {
+Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/api/reservas', [ReservationController::class, 'index'])->name('reservas.index');
     Route::post('/reservar', [ReservationController::class, 'store'])->name('reservar.store');
     Route::post('/reservar-multiplas', [ReservationController::class, 'storeMultiple'])->name('reservar.multiple');
+    Route::post('/api/apply-campaign', [ReservationController::class, 'applyCampaign'])->name('apply.campaign');
     Route::get('/api/user-points', function () {
         return response()->json(['points' => Auth::user()->points ?? 0]);
     });
+});
+
+// ------------------- ADMIN -------------------
+use App\Http\Controllers\AdminController;
+Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
+    Route::get('/dashboard', [AdminController::class, 'index'])->name('admin.dashboard');
+    Route::post('/campaigns/store', [AdminController::class, 'storeCampaign'])->name('admin.campaigns.store');
 });
 
 // ------------------- ROTAS PÚBLICAS -------------------

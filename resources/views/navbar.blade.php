@@ -8,6 +8,9 @@
             <a href="{{ route('viagens') }}">Viajar</a>
             <a href="{{ route('carrinho') }}">Carrinho</a>
             <a href="{{ route('dashboard') }}">Dashboard</a>
+            @if(Auth::user()->is_admin)
+                <a href="{{ route('admin.dashboard') }}" style="color: #fbbf24; font-weight: 600;">🛡️ Admin</a>
+            @endif
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
                 <button type="submit" onclick="localStorage.removeItem('auth_token');">Logout</button>
