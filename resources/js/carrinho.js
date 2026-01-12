@@ -1,4 +1,6 @@
 // carrinho.js - Lógica da página do carrinho
+let userPoints = 0;
+
 function carregarCarrinho() {
     const carrinho = JSON.parse(localStorage.getItem('carrinho') || '[]');
     const container = document.getElementById('carrinho-container');
@@ -13,6 +15,25 @@ function carregarCarrinho() {
         return;
     }
     
+    // Fetch user points first
+    fetch('/api/user-points', {
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        userPoints = data.points || 0;
+        renderCarrinho(carrinho);
+    })
+    .catch(() => {
+        userPoints = 0;
+        renderCarrinho(carrinho);
+    });
+}
+
+function renderCarrinho(carrinho) {
+    const container = document.getElementById('carrinho-container');
     let html = '';
     let total = 0;
     
@@ -38,6 +59,8 @@ function carregarCarrinho() {
     });
     
     const pontosReceber = Math.floor(total / 10);
+    const maxPointsToUse = Math.min(userPoints, total * 10);
+    const maxDiscount = maxPointsToUse / 10;
     
     html += `
         <div class="carrinho-resumo">
@@ -45,13 +68,36 @@ function carregarCarrinho() {
                 <span>Total de itens:</span>
                 <span>${carrinho.reduce((sum, item) => sum + item.quantidade, 0)}</span>
             </div>
-            <div class="resumo-linha resumo-total">
+            
+            <div class="pontos-opcao" style="margin: 1rem 0; padding: 1rem; background: #f9fafb; border-radius: 8px; border: 1px solid #e0e0e0;">
+                <h4 style="margin: 0 0 0.75rem 0; font-size: 0.95rem; color: #374151;">Opções de Pontos</h4>
+                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    <label style="display: flex; align-items: center; cursor: pointer; padding: 0.5rem; border-radius: 6px; transition: background 0.2s;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='transparent'">
+                        <input type="radio" name="pontos-option" value="receber" checked onchange="atualizarResumo()" style="margin-right: 0.5rem;">
+                        <span>🎁 Pontos a receber: <strong style="color: #16a34a;">${pontosReceber} pontos</strong></span>
+                    </label>
+                    <label style="display: flex; align-items: center; cursor: pointer; padding: 0.5rem; border-radius: 6px; transition: background 0.2s;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='transparent'">
+                        <input type="radio" name="pontos-option" value="descontar" onchange="atualizarResumo()" style="margin-right: 0.5rem;">
+                        <span>💰 Descontar pontos (Você tem: <strong>${userPoints}</strong> pontos)</span>
+                    </label>
+                </div>
+                <div id="desconto-info" style="display: none; margin-top: 0.75rem; padding: 0.75rem; background: white; border-radius: 6px; border: 1px solid #d1d5db;">
+                    <p style="margin: 0 0 0.5rem 0; font-size: 0.85rem; color: #6b7280;">Máximo de desconto disponível: <strong>${maxDiscount.toFixed(2)} ${carrinho[0].moeda}</strong></p>
+                    <p style="margin: 0; font-size: 0.85rem; color: #6b7280;">Pontos a usar: <strong id="pontos-usar">${maxPointsToUse}</strong></p>
+                </div>
+            </div>
+            
+            <div class="resumo-linha resumo-total" id="preco-original-linha">
                 <span>Total:</span>
                 <span>${total.toFixed(2)} ${carrinho[0].moeda}</span>
             </div>
-            <div class="resumo-linha" style="color: #16a34a; font-weight: 600; border-top: 1px solid #e0e0e0; margin-top: 0.5rem; padding-top: 0.5rem;">
-                <span>🎁 Pontos a receber:</span>
-                <span>${pontosReceber} pontos</span>
+            <div class="resumo-linha" id="desconto-linha" style="display: none; color: #dc2626;">
+                <span>Desconto:</span>
+                <span id="desconto-valor">-0.00 ${carrinho[0].moeda}</span>
+            </div>
+            <div class="resumo-linha resumo-total" id="preco-final-linha" style="display: none; color: #16a34a; font-size: 1.2rem;">
+                <span>Total Final:</span>
+                <span id="preco-final">0.00 ${carrinho[0].moeda}</span>
             </div>
         </div>
         
@@ -83,6 +129,46 @@ function carregarCarrinho() {
     document.getElementById('passageiros-inputs').innerHTML = passageirosHtml;
 }
 
+function atualizarResumo() {
+    const carrinho = JSON.parse(localStorage.getItem('carrinho') || '[]');
+    const selectedOption = document.querySelector('input[name="pontos-option"]:checked')?.value;
+    const descontoInfo = document.getElementById('desconto-info');
+    const descontoLinha = document.getElementById('desconto-linha');
+    const precoOriginalLinha = document.getElementById('preco-original-linha');
+    const precoFinalLinha = document.getElementById('preco-final-linha');
+    
+    let total = 0;
+    carrinho.forEach(item => {
+        total += item.preco * item.quantidade;
+    });
+    
+    if (selectedOption === 'descontar') {
+        // Calculate discount
+        const maxPointsToUse = Math.min(userPoints, total * 10);
+        const desconto = maxPointsToUse / 10;
+        const finalPrice = Math.max(0, total - desconto);
+        
+        // Show discount information
+        descontoInfo.style.display = 'block';
+        descontoLinha.style.display = 'flex';
+        precoFinalLinha.style.display = 'flex';
+        
+        document.getElementById('pontos-usar').textContent = maxPointsToUse;
+        document.getElementById('desconto-valor').textContent = `-${desconto.toFixed(2)} ${carrinho[0].moeda}`;
+        document.getElementById('preco-final').textContent = `${finalPrice.toFixed(2)} ${carrinho[0].moeda}`;
+        
+        precoOriginalLinha.style.textDecoration = 'line-through';
+        precoOriginalLinha.style.opacity = '0.6';
+    } else {
+        // Hide discount information
+        descontoInfo.style.display = 'none';
+        descontoLinha.style.display = 'none';
+        precoFinalLinha.style.display = 'none';
+        precoOriginalLinha.style.textDecoration = 'none';
+        precoOriginalLinha.style.opacity = '1';
+    }
+}
+
 function alterarQuantidade(index, delta) {
     const carrinho = JSON.parse(localStorage.getItem('carrinho') || '[]');
     carrinho[index].quantidade += delta;
@@ -104,6 +190,7 @@ function removerItem(index) {
 
 function finalizarCompra() {
     const carrinho = JSON.parse(localStorage.getItem('carrinho') || '[]');
+    const selectedOption = document.querySelector('input[name="pontos-option"]:checked')?.value;
     
     const reservas = [];
     let todosPreenchidos = true;
@@ -137,13 +224,18 @@ function finalizarCompra() {
         return;
     }
     
+    const requestData = {
+        reservas,
+        usar_pontos: selectedOption === 'descontar'
+    };
+    
     fetch('/reservar-multiplas', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
         },
-        body: JSON.stringify({ reservas })
+        body: JSON.stringify(requestData)
     })
     .then(res => {
         if (!res.ok) {
@@ -153,7 +245,7 @@ function finalizarCompra() {
                     if (confirm(errorMessage + '\n\nDeseja fazer login novamente?')) {
                         window.location.href = '/login';
                     }
-                    return;
+                    throw new Error('login_redirect');
                 }
                 throw new Error(errorMessage);
             });
@@ -164,7 +256,13 @@ function finalizarCompra() {
         if (resp && resp.success) {
             const msg = document.createElement('div');
             msg.style.cssText = 'position:fixed;top:20px;right:20px;background:#16a34a;color:white;padding:1rem 1.5rem;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.2);z-index:9999;';
-            msg.innerHTML = `Reservas criadas com sucesso!<br>🎁 Ganhou ${resp.pontos_ganhos} pontos!`;
+            
+            if (selectedOption === 'descontar') {
+                msg.innerHTML = `Reservas criadas com sucesso!<br>💰 Usou ${resp.pontos_usados} pontos (desconto de ${(resp.pontos_usados / 10).toFixed(2)}€)`;
+            } else {
+                msg.innerHTML = `Reservas criadas com sucesso!<br>🎁 Ganhou ${resp.pontos_ganhos} pontos!`;
+            }
+            
             document.body.appendChild(msg);
             
             localStorage.removeItem('carrinho');
@@ -175,7 +273,7 @@ function finalizarCompra() {
     })
     .catch(error => {
         console.error('Erro:', error);
-        if (!error.message.includes('login')) {
+        if (error && error.message && !error.message.includes('login')) {
             const msg = document.createElement('div');
             msg.style.cssText = 'position:fixed;top:20px;right:20px;background:#dc2626;color:white;padding:1rem 1.5rem;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.2);z-index:9999;';
             msg.textContent = 'Erro ao finalizar compra: ' + error.message;
@@ -188,5 +286,6 @@ function finalizarCompra() {
 window.alterarQuantidade = alterarQuantidade;
 window.removerItem = removerItem;
 window.finalizarCompra = finalizarCompra;
+window.atualizarResumo = atualizarResumo;
 
 carregarCarrinho();

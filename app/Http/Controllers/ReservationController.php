@@ -143,32 +143,90 @@ class ReservationController extends Controller
                 'reservas.*.passenger_name' => 'required|string|max:255',
                 'reservas.*.price' => 'required|numeric|min:0',
                 'reservas.*.quantity' => 'required|integer|min:1',
+                'usar_pontos' => 'boolean',
             ]);
 
             $reservasCriadas = [];
             $totalAmount = 0;
+            $usarPontos = $request->input('usar_pontos', false);
 
             DB::beginTransaction();
 
+            // Calculate total amount first
             foreach ($request->reservas as $reservaData) {
                 $totalAmount += $reservaData['price'] * $reservaData['quantity'];
+            }
+
+            // Calculate points to use/receive
+            $pontosGanhos = 0;
+            $pontosUsados = 0;
+            $totalDiscount = 0;
+
+            if ($usarPontos) {
+                // User wants to use points for discount
+                // Maximum points that can be used = total price * 10
+                $maxPointsToUse = $totalAmount * 10;
                 
-                for ($i = 0; $i < $reservaData['quantity']; $i++) {
+                // Cap by user's available points
+                $pontosUsados = min($user->points, $maxPointsToUse);
+                
+                // Calculate total discount: points / 10 = discount
+                $totalDiscount = $pontosUsados / 10;
+                
+                // Deduct points from user
+                $user->points -= $pontosUsados;
+                $user->save();
+            } else {
+                // User wants to earn points: 1 point per each 10€
+                $pontosGanhos = floor($totalAmount / 10);
+                $user->points += $pontosGanhos;
+                $user->save();
+            }
+
+            // Process each reservation
+            foreach ($request->reservas as $reservaData) {
+                $originalPrice = $reservaData['price'];
+                $quantity = $reservaData['quantity'];
+                
+                for ($i = 0; $i < $quantity; $i++) {
+                    // Calculate discount per reservation if using points
+                    $reservationPrice = $originalPrice;
+                    $pointsSpentThisReservation = 0;
+                    $pointsReceivedThisReservation = 0;
+                    
+                    if ($usarPontos && $totalAmount > 0) {
+                        // Proportional discount for this reservation
+                        $proportionalDiscount = ($originalPrice / $totalAmount) * $totalDiscount;
+                        $reservationPrice = max(0, $originalPrice - $proportionalDiscount);
+                        $pointsSpentThisReservation = round(($originalPrice / $totalAmount) * $pontosUsados);
+                    } else {
+                        // Points earned per reservation
+                        $pointsReceivedThisReservation = floor($originalPrice / 10);
+                    }
+                    
+                    // Create reservation with adjusted price if using points
                     $reservation = new Reservation();
                     $reservation->user_id = $userId;
                     $reservation->trip_id = $reservaData['trip_id'];
                     $reservation->passenger_name = $reservaData['passenger_name'];
-                    $reservation->price = $reservaData['price'];
+                    $reservation->price = $reservationPrice;
                     $reservation->status = 'confirmado';
                     $reservation->save();
                     
-                    // Criar pagamento para cada reserva
+                    // Call stored procedure to track points
+                    DB::statement('CALL insert_reservas_pontos(?, ?, ?)', [
+                        $reservation->id,
+                        $pointsSpentThisReservation,
+                        $pointsReceivedThisReservation
+                    ]);
+                    
+                    // Create payment for each reservation
                     $payment = new Payment();
                     $payment->reservation_id = $reservation->id;
                     $payment->user_id = $userId;
-                    $payment->amount = $reservaData['price'];
+                    $payment->amount = $reservationPrice;
                     $payment->currency = 'EUR';
-                    $payment->payment_method = 'card'; // Pode ser dinâmico depois
+                    $payment->payment_method = 'card';
                     $payment->status = 'completed';
                     $payment->transaction_id = 'TXN-' . strtoupper(uniqid());
                     $payment->paid_at = now();
@@ -178,11 +236,6 @@ class ReservationController extends Controller
                 }
             }
 
-            // Calcular e adicionar pontos: 1 ponto por cada 10€
-            $pontosGanhos = floor($totalAmount / 10);
-            $user->points += $pontosGanhos;
-            $user->save();
-
             DB::commit();
 
             return response()->json([
@@ -190,7 +243,8 @@ class ReservationController extends Controller
                 'message' => count($reservasCriadas) . ' reserva(s) criada(s) com sucesso!',
                 'reservas' => $reservasCriadas,
                 'total_paid' => $totalAmount,
-                'pontos_ganhos' => $pontosGanhos
+                'pontos_ganhos' => $usarPontos ? 0 : $pontosGanhos,
+                'pontos_usados' => $usarPontos ? $pontosUsados : 0
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
