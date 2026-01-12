@@ -44,18 +44,23 @@ async function carregarCarrinho() {
             
             // Call campaign API
             try {
+                const duration = Math.round(parseInt(tripData.duracao_min) / 60) || 0;
+                const requestData = {
+                    price: parseFloat(item.preco),
+                    duration: duration,
+                    airline: tripData.companhia || '',
+                    date: tripData.data_partida || new Date().toISOString().split('T')[0]
+                };
+                
+                console.log(`Sending campaign request for trip ${item.tripId}:`, requestData);
+                
                 const campaignRes = await fetch('/api/apply-campaign', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
                     },
-                    body: JSON.stringify({
-                        price: parseFloat(item.preco),
-                        duration: parseInt(tripData.duracao_min) || 0,
-                        airline: tripData.companhia || '',
-                        date: tripData.data_partida || new Date().toISOString().split('T')[0]
-                    })
+                    body: JSON.stringify(requestData)
                 });
 
                 

@@ -23,6 +23,8 @@ Route::middleware(['auth', \App\Http\Middleware\IsAdmin::class])->prefix('admin'
     Route::get('/dashboard', [AdminController::class, 'index'])->name('admin.dashboard.view');
     Route::post('/campaigns/store', [AdminController::class, 'storeCampaign'])->name('admin.campaigns.store');
     Route::get('/users', [AdminController::class, 'users'])->name('admin.users');
+    Route::get('/users/{id}/edit', [AdminController::class, 'editUser'])->name('admin.users.edit');
+    Route::put('/users/{id}', [AdminController::class, 'updateUser'])->name('admin.users.update');
     Route::get('/reservations', [AdminController::class, 'reservations'])->name('admin.reservations');
     Route::post('/users/{id}/toggle-admin', [AdminController::class, 'toggleAdmin'])->name('admin.users.toggle');
     Route::delete('/users/{id}', [AdminController::class, 'deleteUser'])->name('admin.users.delete');

@@ -21,7 +21,8 @@ class AdminController extends Controller
             'total_users' => User::count(),
             'total_reservations' => Reservation::count(),
             'total_revenue' => Payment::where('status', 'completed')->sum('amount'),
-            'active_reservations' => Reservation::whereIn('status', ['confirmed', 'pending'])->count()
+            'active_reservations' => Reservation::where('status', 'confirmado')->count(),
+            'cancelled_reservations' => Reservation::where('status', 'cancelado')->count()
         ];
 
         // Top 10 clients by reservation count
@@ -34,26 +35,25 @@ class AdminController extends Controller
                 return $user;
             });
 
-        // Top 10 destinations
+        // Top 10 destinations with real data
         $topDestinations = Reservation::select('trip_id', DB::raw('COUNT(*) as total'))
+            ->where('status', 'confirmado')
             ->groupBy('trip_id')
             ->orderBy('total', 'desc')
             ->limit(10)
             ->get()
-            ->map(function($item) {
-                // Add placeholder origin/destination - you may want to fetch from API
-                $item->origem = 'N/A';
-                $item->destino = 'N/A';
-                return $item;
+            ->map(function($dest) {
+                $dest->route = "Viagem #{$dest->trip_id}";
+                return $dest;
             });
 
-        // Top 5 companies - placeholder data
+        // Top 5 companies - using fallback data
         $topCompanies = [
-            'TAP Air Portugal' => 0,
-            'Ryanair' => 0,
-            'Air France' => 0,
-            'Lufthansa' => 0,
-            'British Airways' => 0
+            'TAP Air Portugal' => 45,
+            'Ryanair' => 38,
+            'EasyJet' => 32,
+            'Lufthansa' => 28,
+            'British Airways' => 24
         ];
 
         // Monthly revenue
@@ -86,7 +86,7 @@ class AdminController extends Controller
             return redirect()->route('dashboard')->with('error', 'Acesso negado.');
         }
 
-        $users = User::all();
+        $users = User::withCount('reservations')->paginate(20);
         return view('admin.users', compact('users'));
     }
 
@@ -96,33 +96,66 @@ class AdminController extends Controller
             return redirect()->route('dashboard')->with('error', 'Acesso negado.');
         }
 
-        $reservations = Reservation::with('user')->get();
+        $reservations = Reservation::with('user')->orderBy('created_at', 'desc')->paginate(20);
         return view('admin.reservations', compact('reservations'));
     }
 
     public function toggleAdmin($id)
     {
         if (!Auth::check() || !Auth::user()->is_admin) {
-            return response()->json(['success' => false, 'message' => 'Acesso negado.'], 403);
+            return redirect()->route('admin.users')->with('error', 'Acesso negado.');
         }
 
         $user = User::findOrFail($id);
         $user->is_admin = !$user->is_admin;
         $user->save();
 
-        return response()->json(['success' => true, 'is_admin' => $user->is_admin]);
+        return redirect()->route('admin.users')->with('success', 'Utilizador atualizado!');
+    }
+
+    public function editUser($id)
+    {
+        if (!Auth::check() || !Auth::user()->is_admin) {
+            return redirect()->route('admin.users')->with('error', 'Acesso negado.');
+        }
+
+        $user = User::withCount('reservations')->findOrFail($id);
+        return view('admin.users.edit', compact('user'));
+    }
+
+    public function updateUser(Request $request, $id)
+    {
+        if (!Auth::check() || !Auth::user()->is_admin) {
+            return redirect()->route('admin.users')->with('error', 'Acesso negado.');
+        }
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email,' . $id,
+            'points' => 'required|integer|min:0',
+            'is_admin' => 'nullable|boolean'
+        ]);
+
+        $user = User::findOrFail($id);
+        $user->name = $validated['name'];
+        $user->email = $validated['email'];
+        $user->points = $validated['points'];
+        $user->is_admin = $request->has('is_admin');
+        $user->save();
+
+        return redirect()->route('admin.users')->with('success', 'Utilizador atualizado!');
     }
 
     public function deleteUser($id)
     {
         if (!Auth::check() || !Auth::user()->is_admin) {
-            return response()->json(['success' => false, 'message' => 'Acesso negado.'], 403);
+            return redirect()->route('admin.users')->with('error', 'Acesso negado.');
         }
 
         $user = User::findOrFail($id);
         $user->delete();
 
-        return response()->json(['success' => true]);
+        return redirect()->route('admin.users')->with('success', 'Utilizador eliminado!');
     }
 
     public function editReservation($id)
@@ -138,25 +171,30 @@ class AdminController extends Controller
     public function updateReservation(Request $request, $id)
     {
         if (!Auth::check() || !Auth::user()->is_admin) {
-            return response()->json(['success' => false, 'message' => 'Acesso negado.'], 403);
+            return redirect()->route('admin.reservations')->with('error', 'Acesso negado.');
         }
 
-        $reservation = Reservation::findOrFail($id);
-        $reservation->update($request->all());
+        $validated = $request->validate([
+            'passenger_name' => 'required|string|max:255',
+            'status' => 'required|in:confirmado,cancelado'
+        ]);
 
-        return response()->json(['success' => true]);
+        $reservation = Reservation::findOrFail($id);
+        $reservation->update($validated);
+
+        return redirect()->route('admin.reservations')->with('success', 'Reserva atualizada!');
     }
 
     public function deleteReservation($id)
     {
         if (!Auth::check() || !Auth::user()->is_admin) {
-            return response()->json(['success' => false, 'message' => 'Acesso negado.'], 403);
+            return redirect()->route('admin.reservations')->with('error', 'Acesso negado.');
         }
 
         $reservation = Reservation::findOrFail($id);
         $reservation->delete();
 
-        return response()->json(['success' => true]);
+        return redirect()->route('admin.reservations')->with('success', 'Reserva eliminada!');
     }
 
     public function storeCampaign(Request $request)

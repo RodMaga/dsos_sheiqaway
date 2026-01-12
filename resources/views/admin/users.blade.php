@@ -59,9 +59,10 @@
                         </td>
                         <td>{{ $user->created_at->format('d/m/Y') }}</td>
                         <td>
+                            <a href="{{ route('admin.users.edit', $user->id) }}" class="btn-action" style="background: #fef3c7; color: #92400e;" title="Editar">✎</a>
                             <form method="POST" action="{{ route('admin.users.toggle', $user->id) }}" style="display: inline;">
                                 @csrf
-                                <button type="submit" class="btn-action btn-warning" title="Alternar Admin">
+                                <button type="submit" class="btn-action" style="background: #dbeafe; color: #1e40af;" title="Alternar Admin">
                                     @if($user->is_admin) ⚇ @else ⚙ @endif
                                 </button>
                             </form>

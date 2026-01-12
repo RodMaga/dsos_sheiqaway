@@ -26,6 +26,7 @@ class PaymentController extends Controller
                 'reservas.*.trip_id' => 'required|integer',
                 'reservas.*.passenger_name' => 'required|string',
                 'reservas.*.price' => 'required|numeric',
+                'reservas.*.quantity' => 'required|integer|min:1',
                 'usar_pontos' => 'boolean',
                 'pontos_usados' => 'integer|min:0'
             ]);
@@ -90,6 +91,15 @@ class PaymentController extends Controller
             
             if ($session->payment_status === 'paid') {
                 $reservas = json_decode($session->metadata->reservas, true);
+                
+                // Ensure quantity field exists (default to 1 if missing)
+                foreach ($reservas as &$reserva) {
+                    if (!isset($reserva['quantity'])) {
+                        $reserva['quantity'] = 1;
+                    }
+                }
+                unset($reserva);
+                
                 $userId = $session->metadata->user_id;
                 $usarPontos = ($session->metadata->usar_pontos ?? '0') === '1';
                 $pontosUsados = (int)($session->metadata->pontos_usados ?? 0);
