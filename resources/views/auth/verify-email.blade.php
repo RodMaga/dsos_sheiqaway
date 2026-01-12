@@ -1,9 +1,4 @@
 <x-guest-layout>
-    <!-- Logo Sheiqaway -->
-    <div class="mb-6 text-center">
-        <img src="{{ asset('images/logo-sheiqaway.png') }}" alt="Logo Sheiqaway" class="w-auto h-16 mx-auto" />
-    </div>
-
     <div class="mb-4 text-sm text-gray-600">
         {{ __('Obrigado por se registar! Antes de começar, poderia verificar o seu endereço de email clicando no link que acabamos de enviar? Se não recebeu o email, teremos todo o gosto em enviar outro.') }}
     </div>
