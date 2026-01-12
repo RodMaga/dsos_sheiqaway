@@ -374,7 +374,7 @@ function finalizarCompra() {
                     trip_id: parseInt(item.tripId),
                     passenger_name: nome,
                     price: parseFloat(itemPrice.toFixed(2)),
-                    quantity: 1
+                    quantity: 1  // Always 1 per passenger
                 });
             }
         }
@@ -401,6 +401,11 @@ function finalizarCompra() {
         pontosUsados = maxPointsToUse;
     }
     
+    console.log('=== DEBUG PAYMENT ===');
+    console.log('Reservas:', JSON.stringify(reservas, null, 2));
+    console.log('Usar pontos:', usarPontos);
+    console.log('Pontos usados:', pontosUsados);
+    
     fetch('/payment/create-checkout-session', {
         method: 'POST',
         headers: {
@@ -423,8 +428,7 @@ function finalizarCompra() {
     })
     .then(data => {
         if (data.id) {
-            // Clear cart before redirecting to Stripe
-            localStorage.removeItem('carrinho');
+            // Don't clear cart yet - only clear after successful payment
             return stripe.redirectToCheckout({ sessionId: data.id });
         } else {
             throw new Error(data.error || 'Erro ao criar sessão de pagamento');

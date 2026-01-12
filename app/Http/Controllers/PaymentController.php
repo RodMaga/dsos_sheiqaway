@@ -141,6 +141,8 @@ class PaymentController extends Controller
                 
                 // Check if reservations were created successfully
                 if ($resultData->success ?? false) {
+                    // Clear cart via session flash message
+                    session()->flash('clear_cart', true);
                     return view('payment.success');
                 } else {
                     \Log::error('Failed to create reservations: ' . json_encode($resultData));

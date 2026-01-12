@@ -75,6 +75,14 @@ Route::middleware('auth')->group(function () {
     Route::get('verify-email', EmailVerificationPromptController::class)->name('verification.notice');
     Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)->middleware(['signed', 'throttle:6,1'])->name('verification.verify');
     Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])->middleware('throttle:6,1')->name('verification.send');
+    
+    // DEV: Verificação rápida sem email
+    if (config('app.env') === 'local') {
+        Route::get('dev/verify-email', function () {
+            auth()->user()->markEmailAsVerified();
+            return redirect()->route('dashboard')->with('status', 'Email verificado com sucesso!');
+        })->name('dev.verify');
+    }
     Route::get('confirm-password', [ConfirmablePasswordController::class, 'show'])->name('password.confirm');
     Route::post('confirm-password', [ConfirmablePasswordController::class, 'store']);
     Route::put('password', [PasswordController::class, 'update'])->name('password.update');
