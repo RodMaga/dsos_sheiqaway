@@ -100,15 +100,25 @@ Route::middleware('auth')->group(function () {
     // APIs de Dados
     Route::prefix('api')->group(function () {
         Route::get('/trips', function () {
-            return response()->json(json_decode(file_get_contents(resource_path('data/trips_com_lotacao.json')), true));
+            try {
+                $response = \Http::withoutVerifying()->timeout(10)->get('https://vs-gate.dei.isep.ipp.pt:10923/api/viagens');
+                return response()->json($response->json());
+            } catch (\Exception $e) {
+                return response()->json(['error' => 'Erro ao carregar viagens'], 500);
+            }
         });
         Route::get('/providers', function () {
             return response()->json(json_decode(file_get_contents(resource_path('data/providers.json')), true));
         });
         Route::get('/trips/{id}', function ($id) {
-            $trips = json_decode(file_get_contents(resource_path('data/trips_com_lotacao.json')), true);
-            $trip = collect($trips)->firstWhere('id', $id);
-            return $trip ? response()->json($trip) : response()->json(['error' => 'Viagem não encontrada'], 404);
+            try {
+                $response = \Http::withoutVerifying()->timeout(10)->get('https://vs-gate.dei.isep.ipp.pt:10923/api/viagens');
+                $trips = collect($response->json());
+                $trip = $trips->firstWhere('id', (int)$id);
+                return $trip ? response()->json($trip) : response()->json(['error' => 'Viagem não encontrada'], 404);
+            } catch (\Exception $e) {
+                return response()->json(['error' => 'Erro ao carregar viagem'], 500);
+            }
         });
     });
 });
