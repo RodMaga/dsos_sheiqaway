@@ -17,6 +17,13 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 
 
+// ------------------- PAGAMENTOS -------------------
+use App\Http\Controllers\PaymentController;
+Route::middleware('auth')->group(function () {
+    Route::post('/payment/create-checkout-session', [PaymentController::class, 'createCheckoutSession']);
+    Route::get('/payment/success', [PaymentController::class, 'success'])->name('payment.success');
+});
+
 // ------------------- RESERVAS -------------------
 use App\Http\Controllers\ReservationController;
 Route::middleware('auth')->group(function () {
