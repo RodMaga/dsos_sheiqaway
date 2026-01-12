@@ -8,6 +8,9 @@
             <a href="{{ route('viagens') }}">Viajar</a>
             <a href="{{ route('carrinho') }}">Carrinho</a>
             <a href="{{ route('dashboard') }}">Dashboard</a>
+            @if(Auth::user()->is_admin)
+            <a href="{{ route('admin.dashboard') }}" style="color: #ef4444;">🔧 Admin</a>
+            @endif
             <button type="button" id="theme-toggle" class="theme-toggle" title="Alternar tema">
                 <span class="theme-icon">🌙</span>
             </button>

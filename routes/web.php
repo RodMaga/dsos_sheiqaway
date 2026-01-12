@@ -17,6 +17,19 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 
 
+// ------------------- ADMIN BACKOFFICE -------------------
+use App\Http\Controllers\AdminController;
+Route::middleware(['auth', \App\Http\Middleware\IsAdmin::class])->prefix('admin')->group(function () {
+    Route::get('/', [AdminController::class, 'index'])->name('admin.dashboard');
+    Route::get('/users', [AdminController::class, 'users'])->name('admin.users');
+    Route::get('/reservations', [AdminController::class, 'reservations'])->name('admin.reservations');
+    Route::post('/users/{id}/toggle-admin', [AdminController::class, 'toggleAdmin'])->name('admin.users.toggle');
+    Route::delete('/users/{id}', [AdminController::class, 'deleteUser'])->name('admin.users.delete');
+    Route::get('/reservations/{id}/edit', [AdminController::class, 'editReservation'])->name('admin.reservations.edit');
+    Route::put('/reservations/{id}', [AdminController::class, 'updateReservation'])->name('admin.reservations.update');
+    Route::delete('/reservations/{id}', [AdminController::class, 'deleteReservation'])->name('admin.reservations.delete');
+});
+
 // ------------------- PAGAMENTOS -------------------
 use App\Http\Controllers\PaymentController;
 Route::middleware('auth')->group(function () {
