@@ -11,14 +11,20 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Auth\EmailVerificationPromptController;
-use App\Http\Controllers\Auth\NewPasswordController;
+use Ause App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
+use App\Http\Controllers\Auth\DevEmailVerificationController;
+
+// ------------------- DESENVOLVIMENTO - VERIFICAÇÃO MANUAL -------------------
+Route::middleware('auth')->group(function () {
+    Route::get('/dev/verify-email', [DevEmailVerificationController::class, 'verify'])->name('dev.verify');
+});
 
 // ------------------- ADMIN BACKOFFICE -------------------
-Route::middleware(['auth', \App\Http\Middleware\IsAdmin::class])->prefix('admin')->group(function () {
+Route::middleware(['auth', 'verified', \App\Http\Middleware\IsAdmin::class])->prefix('admin')->group(function () {
     Route::get('/', [AdminController::class, 'index'])->name('admin.dashboard');
     Route::get('/dashboard', [AdminController::class, 'index'])->name('admin.dashboard.view');
     Route::post('/campaigns/store', [AdminController::class, 'storeCampaign'])->name('admin.campaigns.store');
@@ -34,7 +40,7 @@ Route::middleware(['auth', \App\Http\Middleware\IsAdmin::class])->prefix('admin'
 });
 
 // ------------------- PAGAMENTOS -------------------
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/payment/create-checkout-session', [PaymentController::class, 'createCheckoutSession']);
     Route::get('/payment/success', [PaymentController::class, 'success'])->name('payment.success');
 });
@@ -67,14 +73,16 @@ Route::middleware('guest')->group(function () {
     Route::post('register', [RegisteredUserController::class, 'store']);
     Route::get('login', [AuthenticatedSessionController::class, 'create'])->name('login');
     Route::post('login', [AuthenticatedSessionController::class, 'store']);
-    Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])->name('password.request');
+    Route::get('forgot-password', function () { return view('forgot-password'); })->name('password.request');
     Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])->name('password.email');
-    Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])->name('password.reset');
+    Route::get('reset-password/{token}', function ($token, \Illuminate\Http\Request $request) {
+        return view('reset-password', ['request' => $request, 'token' => $token]);
+    })->name('password.reset');
     Route::post('reset-password', [NewPasswordController::class, 'store'])->name('password.store');
 });
 
 Route::middleware('auth')->group(function () {
-    Route::get('verify-email', EmailVerificationPromptController::class)->name('verification.notice');
+    Route::get('verify-email', function () { return view('verify-email'); })->name('verification.notice');
     Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)->middleware(['signed', 'throttle:6,1'])->name('verification.verify');
     Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])->middleware('throttle:6,1')->name('verification.send');
     
@@ -92,7 +100,7 @@ Route::middleware('auth')->group(function () {
 });
 
 // ------------------- ROTAS PROTEGIDAS -------------------
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'verified'])->group(function () {
     // Páginas
     Route::get('/viagens', function () { return view('viagens'); })->name('viagens');
     Route::get('/dashboard', function () { return view('dashboard'); })->name('dashboard');

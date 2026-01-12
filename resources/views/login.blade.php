@@ -46,7 +46,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="password">Senha</label>
+                    <label for="password">Palavra-passe</label>
                     <input 
                         type="password" 
                         id="password" 
@@ -66,7 +66,7 @@
                         Lembrar-me
                     </label>
                     @if (Route::has('password.request'))
-                        <a href="{{ route('password.request') }}">Esqueceu a senha?</a>
+                        <a href="{{ route('password.request') }}">Esqueceu a palavra-passe?</a>
                     @endif
                 </div>
 
