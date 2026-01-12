@@ -64,7 +64,7 @@
         
         <div class="filters">
             <h2>Filtros</h2>
-            <div class="filter-grid">
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; margin-bottom: 1rem;">
                 <div class="filter-group">
                     <label>Origem</label>
                     <div class="autocomplete">
@@ -77,9 +77,25 @@
                         <input type="text" id="filter-destino" placeholder="Ex: Paris, Londres..." autocomplete="off">
                     </div>
                 </div>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem;">
+                <div class="filter-group">
+                    <label>Companhia</label>
+                    <select id="filter-companhia">
+                        <option value="">Todas</option>
+                    </select>
+                </div>
                 <div class="filter-group">
                     <label>Data de Partida</label>
                     <input type="date" id="filter-data">
+                </div>
+                <div class="filter-group">
+                    <label>Tipo de Viagem</label>
+                    <select id="filter-tipo">
+                        <option value="all">Todas</option>
+                        <option value="direta">Voo Direto</option>
+                        <option value="escala">Com Escala</option>
+                    </select>
                 </div>
                 <div class="filter-group">
                     <label>Preço Máximo</label>

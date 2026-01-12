@@ -1,6 +1,7 @@
 // viagens.js - Lógica da página de viagens
 let allViagens = [];
 let viagemTemporaria = null;
+let lugaresDisponiveisCache = {};
 
 function decodeHTML(text) {
     if (!text) return '';
@@ -41,11 +42,25 @@ fetch('https://vs-gate.dei.isep.ipp.pt:10923/api/viagens')
         }
         allViagens = data;
         setupAutocomplete();
-        renderViagens(allViagens);
+        setupCompanhiaFilter();
+        carregarLugaresDisponiveis().then(() => {
+            renderViagens(allViagens);
+        });
     })
     .catch(() => {
         document.getElementById('viagens-list').innerHTML = '<p style="color: #666;">Erro ao carregar viagens da API.</p>';
     });
+
+function carregarLugaresDisponiveis() {
+    return fetch('/api/viagens/lugares-disponiveis/bulk')
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                lugaresDisponiveisCache = data.data;
+            }
+        })
+        .catch(err => console.error('Erro ao carregar lugares disponíveis:', err));
+}
 
 function setupAutocomplete() {
     const origens = [...new Set(allViagens.map(v => getCityName(v.origem)))];
@@ -53,6 +68,21 @@ function setupAutocomplete() {
     
     autocomplete(document.getElementById('filter-origem'), origens);
     autocomplete(document.getElementById('filter-destino'), destinos);
+}
+
+function setupCompanhiaFilter() {
+    const companhias = [...new Set(allViagens.map(v => v.companhia))].sort();
+    const select = document.getElementById('filter-companhia');
+    
+    companhias.forEach(comp => {
+        const option = document.createElement('option');
+        option.value = comp;
+        option.textContent = getAirlineName(comp);
+        select.appendChild(option);
+    });
+    
+    select.addEventListener('change', applyFilters);
+    document.getElementById('filter-tipo').addEventListener('change', applyFilters);
 }
 
 function autocomplete(inp, arr) {
@@ -134,6 +164,8 @@ function autocomplete(inp, arr) {
 function applyFilters() {
     const origemFilter = document.getElementById('filter-origem').value.toLowerCase();
     const destinoFilter = document.getElementById('filter-destino').value.toLowerCase();
+    const companhiaFilter = document.getElementById('filter-companhia').value;
+    const tipoFilter = document.getElementById('filter-tipo').value;
     const dataFilter = document.getElementById('filter-data').value;
     const precoFilter = parseFloat(document.getElementById('filter-preco').value);
     
@@ -143,6 +175,11 @@ function applyFilters() {
         
         if (origemFilter && !origemNome.includes(origemFilter)) return false;
         if (destinoFilter && !destinoNome.includes(destinoFilter)) return false;
+        if (companhiaFilter && viagem.companhia !== companhiaFilter) return false;
+        
+        if (tipoFilter === 'direta' && viagem.escala) return false;
+        if (tipoFilter === 'escala' && !viagem.escala) return false;
+        
         if (dataFilter) {
             const viagemDate = new Date(viagem.data_partida).toISOString().split('T')[0];
             if (viagemDate !== dataFilter) return false;
@@ -154,26 +191,16 @@ function applyFilters() {
     renderViagens(filtered);
 }
 
-window.clearFilters = clearFilters;
-window.adicionarAoCarrinho = adicionarAoCarrinho;
-window.fecharModal = fecharModal;
-window.confirmarQuantidade = confirmarQuantidade;
-window.atualizarContadorCarrinho = atualizarContadorCarrinho;
-
 function clearFilters() {
     document.getElementById('filter-origem').value = '';
     document.getElementById('filter-destino').value = '';
+    document.getElementById('filter-companhia').value = '';
+    document.getElementById('filter-tipo').value = 'all';
     document.getElementById('filter-data').value = '';
     document.getElementById('filter-preco').value = 1000;
     document.getElementById('price-display').textContent = '1000€';
     renderViagens(allViagens);
 }
-
-document.getElementById('filter-data').addEventListener('change', applyFilters);
-document.getElementById('filter-preco').addEventListener('input', function() {
-    document.getElementById('price-display').textContent = this.value + '€';
-    applyFilters();
-});
 
 function renderViagens(viagens) {
     let html = '';
@@ -188,10 +215,27 @@ function renderViagens(viagens) {
         const origem = getCityName(decodeHTML(viagem.origem || ''));
         const destino = getCityName(decodeHTML(viagem.destino || ''));
         
-        html += `<div class="viagem-card">
+        const lugaresInfo = lugaresDisponiveisCache[viagem.id] || { lugares_disponiveis: 0 };
+        const lugaresDisponiveis = lugaresInfo.lugares_disponiveis;
+        
+        let lugaresColor = '#28a745';
+        let btnDisabled = '';
+        let btnText = 'Adicionar ao Carrinho';
+        let btnOpacity = '1';
+        
+        if (lugaresDisponiveis === 0) {
+            lugaresColor = '#dc3545';
+            btnDisabled = 'disabled';
+            btnText = 'Esgotado';
+            btnOpacity = '0.5';
+        } else if (lugaresDisponiveis < 5) {
+            lugaresColor = '#ffc107';
+        }
+        
+        html += `<div class="viagem-card" data-trip-id="${viagem.id}">
             <div class="card-header">
                 <h3>${companhia}</h3>
-                <div class="route">${origem} → ${destino}</div>
+                <div class="route">${origem} → ${destino}${viagem.escala ? ' (Com Escala)' : ''}</div>
             </div>
             <div class="info-row">
                 <span class="info-label">Partida:</span>
@@ -203,11 +247,11 @@ function renderViagens(viagens) {
             </div>
             <div class="info-row">
                 <span class="info-label">Lugares:</span>
-                <span class="info-value">${viagem.lugares_disponiveis} disponíveis</span>
+                <span class="info-value lugares-disponiveis" style="color: ${lugaresColor}">${lugaresDisponiveis} disponíveis</span>
             </div>
             <div class="price-tag">${viagem.preco} ${viagem.moeda}</div>
             <div style="display: flex; gap: 0.5rem;">
-                <button class="btn-reservar" style="flex: 1;" onclick="adicionarAoCarrinho(${viagem.id}, '${companhia}', '${origem}', '${destino}', ${viagem.preco}, '${viagem.moeda}')">Adicionar ao Carrinho</button>
+                <button class="btn-reservar" style="flex: 1; opacity: ${btnOpacity}" ${btnDisabled} onclick="window.adicionarAoCarrinho(${viagem.id}, '${companhia}', '${origem}', '${destino}', ${viagem.preco}, '${viagem.moeda}')">${btnText}</button>
                 <a href="/detalhes/${viagem.id}" class="btn-detalhes">Ver Detalhes</a>
             </div>
         </div>`;
@@ -216,8 +260,16 @@ function renderViagens(viagens) {
 }
 
 function adicionarAoCarrinho(tripId, companhia, origem, destino, preco, moeda) {
-    viagemTemporaria = { tripId, companhia, origem, destino, preco, moeda };
+    const lugaresInfo = lugaresDisponiveisCache[tripId];
+    
+    if (!lugaresInfo || lugaresInfo.lugares_disponiveis === 0) {
+        alert('Não há lugares disponíveis para esta viagem.');
+        return;
+    }
+    
+    viagemTemporaria = { tripId, companhia, origem, destino, preco, moeda, lugaresDisponiveis: lugaresInfo.lugares_disponiveis };
     document.getElementById('input-quantidade').value = 1;
+    document.getElementById('input-quantidade').max = lugaresInfo.lugares_disponiveis;
     document.getElementById('modal-quantidade').classList.add('show');
 }
 
@@ -229,11 +281,23 @@ function confirmarQuantidade() {
     const quantidade = parseInt(document.getElementById('input-quantidade').value);
     if (!quantidade || quantidade < 1) return;
     
+    if (quantidade > viagemTemporaria.lugaresDisponiveis) {
+        alert(`Apenas ${viagemTemporaria.lugaresDisponiveis} lugar(es) disponível(eis).`);
+        return;
+    }
+    
     let carrinho = JSON.parse(localStorage.getItem('carrinho') || '[]');
     
     const itemExistente = carrinho.find(item => item.tripId === viagemTemporaria.tripId);
+    const quantidadeTotal = itemExistente ? parseInt(itemExistente.quantidade) + quantidade : quantidade;
+    
+    if (quantidadeTotal > viagemTemporaria.lugaresDisponiveis) {
+        alert(`Você já tem ${itemExistente.quantidade} bilhete(s) no carrinho. Máximo disponível: ${viagemTemporaria.lugaresDisponiveis}`);
+        return;
+    }
+    
     if (itemExistente) {
-        itemExistente.quantidade = parseInt(itemExistente.quantidade) + quantidade;
+        itemExistente.quantidade = quantidadeTotal;
     } else {
         carrinho.push({
             ...viagemTemporaria,
@@ -259,5 +323,17 @@ function atualizarContadorCarrinho() {
     const badge = document.querySelector('.cart-badge');
     if (badge) badge.textContent = total;
 }
+
+window.clearFilters = clearFilters;
+window.adicionarAoCarrinho = adicionarAoCarrinho;
+window.fecharModal = fecharModal;
+window.confirmarQuantidade = confirmarQuantidade;
+window.atualizarContadorCarrinho = atualizarContadorCarrinho;
+
+document.getElementById('filter-data').addEventListener('change', applyFilters);
+document.getElementById('filter-preco').addEventListener('input', function() {
+    document.getElementById('price-display').textContent = this.value + '€';
+    applyFilters();
+});
 
 atualizarContadorCarrinho();

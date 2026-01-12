@@ -9,9 +9,23 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 
 class ReservationController extends Controller
 {
+    private function getViagensFromAPI()
+    {
+        return Cache::remember('viagens_api', 300, function () {
+            $response = \Http::withoutVerifying()->timeout(10)->get("https://vs-gate.dei.isep.ipp.pt:10923/api/viagens");
+            return $response->json();
+        });
+    }
+
+    private function getViagemById($tripId)
+    {
+        $viagens = $this->getViagensFromAPI();
+        return collect($viagens)->firstWhere('id', (int)$tripId);
+    }
     public function index()
     {
         try {
@@ -36,11 +50,9 @@ class ReservationController extends Controller
     public function store(Request $request)
     {
         try {
-            // O middleware 'auth' já garante que o usuário está autenticado
             $userId = Auth::id();
             $user = Auth::user();
 
-            // Verificar se o utilizador realmente existe na base de dados
             if (!$user) {
                 Auth::logout();
                 return response()->json([
@@ -53,7 +65,28 @@ class ReservationController extends Controller
                 'trip_id' => 'required|integer',
                 'passenger_name' => 'required|string|max:255',
                 'price' => 'required|numeric|min:0',
+                'quantity' => 'sometimes|integer|min:1',
             ]);
+
+            $quantity = $request->quantity ?? 1;
+
+            // Verificar lugares disponíveis
+            $viagem = $this->getViagemById($request->trip_id);
+            
+            $capacidadeMaxima = $viagem['capacidade'] ?? 50;
+            
+            $lugaresOcupados = Reservation::where('trip_id', $request->trip_id)
+                ->where('status', 'confirmado')
+                ->count();
+            
+            $lugaresDisponiveis = $capacidadeMaxima - $lugaresOcupados;
+            
+            if ($quantity > $lugaresDisponiveis) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Apenas {$lugaresDisponiveis} lugar(es) disponível(eis). Não é possível reservar {$quantity} lugar(es)."
+                ], 400);
+            }
 
             $reservation = new Reservation();
             $reservation->user_id = $userId;
@@ -77,7 +110,6 @@ class ReservationController extends Controller
                 'errors' => $errors
             ], 422);
         } catch (QueryException $e) {
-            // Erro específico de base de dados
             $errorCode = $e->errorInfo[1] ?? null;
             $errorMessage = $e->getMessage();
             
@@ -90,8 +122,6 @@ class ReservationController extends Controller
             ]);
             
             if ($errorCode == 1452) {
-                // Foreign key constraint violation - usuário ou viagem não existe
-                // Verificar qual foreign key falhou
                 if (str_contains($errorMessage, 'user_id')) {
                     return response()->json([
                         'success' => false,
@@ -154,6 +184,26 @@ class ReservationController extends Controller
 
             // Calculate total amount first
             foreach ($request->reservas as $reservaData) {
+                // Buscar capacidade da API externa
+                $viagem = $this->getViagemById($reservaData['trip_id']);
+                
+                $capacidadeMaxima = $viagem['capacidade'] ?? 50;
+                
+                // Verificar lugares disponíveis para esta viagem
+                $lugaresOcupados = Reservation::where('trip_id', $reservaData['trip_id'])
+                    ->where('status', 'confirmado')
+                    ->count();
+                
+                $lugaresDisponiveis = $capacidadeMaxima - $lugaresOcupados;
+                
+                if ($reservaData['quantity'] > $lugaresDisponiveis) {
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Apenas {$lugaresDisponiveis} lugar(es) disponível(eis) para a viagem {$reservaData['trip_id']}."
+                    ], 400);
+                }
+                
                 $totalAmount += $reservaData['price'] * $reservaData['quantity'];
             }
 
@@ -318,6 +368,179 @@ class ReservationController extends Controller
                 'final_price' => $request->price,
                 'discount_applied' => false
             ], 500);
+        }
+    }
+    public function lugaresDisponiveisBulk()
+    {
+        try {
+            $viagens = $this->getViagensFromAPI();
+            $reservas = Reservation::where('status', 'confirmado')
+                ->select('trip_id', DB::raw('count(*) as total'))
+                ->groupBy('trip_id')
+                ->pluck('total', 'trip_id');
+            
+            $resultado = [];
+            foreach ($viagens as $viagem) {
+                $tripId = $viagem['id'];
+                $capacidade = $viagem['capacidade'] ?? 50;
+                $ocupados = $reservas[$tripId] ?? 0;
+                $disponiveis = max(0, $capacidade - $ocupados);
+                
+                $resultado[$tripId] = [
+                    'lugares_disponiveis' => $disponiveis,
+                    'lugares_ocupados' => $ocupados,
+                    'capacidade_maxima' => $capacidade
+                ];
+            }
+            
+            return response()->json(['success' => true, 'data' => $resultado]);
+        } catch (\Exception $e) {
+            Log::error('Erro ao verificar lugares disponíveis em bulk: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Erro ao verificar disponibilidade.'], 500);
+        }
+    }
+
+    public function lugaresDisponiveis($tripId)
+    {
+        try {
+            $viagem = $this->getViagemById($tripId);
+            
+            if (!$viagem) {
+                return response()->json(['success' => false, 'message' => 'Viagem não encontrada'], 404);
+            }
+            
+            $capacidadeMaxima = $viagem['capacidade'] ?? 50;
+            
+            $lugaresOcupados = Reservation::where('trip_id', $tripId)
+                ->where('status', 'confirmado')
+                ->count();
+            
+            $lugaresDisponiveis = $capacidadeMaxima - $lugaresOcupados;
+            
+            return response()->json([
+                'success' => true,
+                'trip_id' => $tripId,
+                'lugares_ocupados' => $lugaresOcupados,
+                'lugares_disponiveis' => max(0, $lugaresDisponiveis),
+                'capacidade_maxima' => $capacidadeMaxima
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Erro ao verificar lugares disponíveis: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao verificar disponibilidade.'
+            ], 500);
+        }
+    }
+
+    public function show($id)
+    {
+        try {
+            $reservation = Reservation::where('id', $id)
+                ->where('user_id', Auth::id())
+                ->with('payments')
+                ->first();
+
+            if (!$reservation) {
+                return response()->json(['success' => false, 'message' => 'Reserva não encontrada'], 404);
+            }
+
+            return response()->json(['success' => true, 'reserva' => $reservation]);
+        } catch (\Exception $e) {
+            Log::error('Erro ao buscar reserva: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Erro ao carregar reserva'], 500);
+        }
+    }
+
+    public function update(Request $request, $id)
+    {
+        try {
+            $reservation = Reservation::where('id', $id)
+                ->where('user_id', Auth::id())
+                ->first();
+
+            if (!$reservation) {
+                return response()->json(['success' => false, 'message' => 'Reserva não encontrada'], 404);
+            }
+
+            if ($reservation->status === 'cancelado') {
+                return response()->json(['success' => false, 'message' => 'Não é possível alterar uma reserva cancelada'], 400);
+            }
+
+            $request->validate([
+                'passenger_name' => 'sometimes|string|max:255',
+                'trip_id' => 'sometimes|integer',
+            ]);
+
+            if ($request->has('trip_id') && $request->trip_id != $reservation->trip_id) {
+                $viagem = $this->getViagemById($request->trip_id);
+                
+                $capacidadeMaxima = $viagem['capacidade'] ?? 50;
+                $lugaresOcupados = Reservation::where('trip_id', $request->trip_id)
+                    ->where('status', 'confirmado')
+                    ->count();
+                
+                if ($lugaresOcupados >= $capacidadeMaxima) {
+                    return response()->json(['success' => false, 'message' => 'Viagem lotada'], 400);
+                }
+            }
+
+            $reservation->fill($request->only(['passenger_name', 'trip_id']));
+            $reservation->save();
+
+            return response()->json(['success' => true, 'message' => 'Reserva atualizada com sucesso', 'reserva' => $reservation]);
+        } catch (\Exception $e) {
+            Log::error('Erro ao atualizar reserva: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Erro ao atualizar reserva'], 500);
+        }
+    }
+
+    public function cancel($id)
+    {
+        try {
+            $reservation = Reservation::where('id', $id)
+                ->where('user_id', Auth::id())
+                ->first();
+
+            if (!$reservation) {
+                return response()->json(['success' => false, 'message' => 'Reserva não encontrada'], 404);
+            }
+
+            if ($reservation->status === 'cancelado') {
+                return response()->json(['success' => false, 'message' => 'Reserva já está cancelada'], 400);
+            }
+
+            $reservation->status = 'cancelado';
+            $reservation->save();
+
+            return response()->json(['success' => true, 'message' => 'Reserva cancelada com sucesso']);
+        } catch (\Exception $e) {
+            Log::error('Erro ao cancelar reserva: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Erro ao cancelar reserva'], 500);
+        }
+    }
+
+    public function destroy($id)
+    {
+        try {
+            $reservation = Reservation::where('id', $id)
+                ->where('user_id', Auth::id())
+                ->first();
+
+            if (!$reservation) {
+                return response()->json(['success' => false, 'message' => 'Reserva não encontrada'], 404);
+            }
+
+            DB::beginTransaction();
+            Payment::where('reservation_id', $id)->delete();
+            $reservation->delete();
+            DB::commit();
+
+            return response()->json(['success' => true, 'message' => 'Reserva eliminada com sucesso']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Erro ao eliminar reserva: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Erro ao eliminar reserva'], 500);
         }
     }
 }

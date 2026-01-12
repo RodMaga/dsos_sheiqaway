@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\View\View;
+use App\Models\Reservation;
 
 class ProfileController extends Controller
 {
@@ -56,5 +57,39 @@ class ProfileController extends Controller
         $request->session()->regenerateToken();
 
         return Redirect::to('/');
+    }
+
+    public function reservas()
+    {
+        $reservations = Reservation::where('user_id', auth()->id())
+            ->orderBy('created_at', 'desc')
+            ->paginate(15);
+        
+        return view('profile.reservas', compact('reservations'));
+    }
+
+    public function editReservation($id)
+    {
+        $reservation = Reservation::where('user_id', auth()->id())
+            ->where('id', $id)
+            ->firstOrFail();
+        
+        return view('profile.edit-reservation', compact('reservation'));
+    }
+
+    public function updateReservation(Request $request, $id)
+    {
+        $reservation = Reservation::where('user_id', auth()->id())
+            ->where('id', $id)
+            ->firstOrFail();
+        
+        $request->validate([
+            'passenger_name' => 'required|string|max:255',
+        ]);
+
+        $reservation->passenger_name = $request->passenger_name;
+        $reservation->save();
+
+        return redirect()->route('profile.reservas')->with('success', 'Reserva atualizada!');
     }
 }
