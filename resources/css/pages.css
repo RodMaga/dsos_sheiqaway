@@ -508,6 +508,32 @@ main {
     color: #6c757d;
 }
 
+body.dark-mode .auth-card {
+    background: #2d2d2d;
+    border-color: #404040;
+}
+
+body.dark-mode .auth-card h2,
+body.dark-mode .auth-card .form-group label,
+body.dark-mode .remember-forgot label {
+    color: #e0e0e0;
+}
+
+body.dark-mode .auth-card p,
+body.dark-mode .auth-footer {
+    color: #b0b0b0;
+}
+
+body.dark-mode .auth-card .form-group input {
+    background: #1a1a1a;
+    border-color: #404040;
+    color: #e0e0e0;
+}
+
+body.dark-mode .auth-card .form-group input::placeholder {
+    color: #6c757d;
+}
+
 /* === VIAGENS PAGE === */
 body.viagens-page {
     background: #f8f9fa;
@@ -1248,6 +1274,23 @@ body.detalhes-page .content-card {
     box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 
+body.dark-mode.detalhes-page {
+    background: #1a1a1a;
+}
+
+body.dark-mode.detalhes-page h2,
+body.dark-mode.detalhes-page h3,
+body.dark-mode.detalhes-page h4,
+body.dark-mode.detalhes-page p,
+body.dark-mode.detalhes-page strong,
+body.dark-mode.detalhes-page div {
+    color: #e0e0e0 !important;
+}
+
+body.dark-mode.detalhes-page .content-card {
+    background: #2d2d2d;
+}
+
 .trip-details-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -1316,7 +1359,9 @@ body.dark-mode .content-card,
 body.dark-mode .viagem-card,
 body.dark-mode .card,
 body.dark-mode .carrinho-item,
-body.dark-mode .modal-content {
+body.dark-mode .modal-content,
+body.dark-mode .filters,
+body.dark-mode .reserva-card {
     background: #2d2d2d;
     border-color: #404040;
     color: #e0e0e0;
@@ -1328,8 +1373,61 @@ body.dark-mode h1, body.dark-mode h2, body.dark-mode h3, body.dark-mode h4 {
 
 body.dark-mode .info-label,
 body.dark-mode .info-value,
-body.dark-mode p {
+body.dark-mode .route,
+body.dark-mode p,
+body.dark-mode strong {
     color: #b0b0b0;
+}
+
+body.dark-mode .price-tag {
+    background: #1a3a52;
+    border-color: #60a5fa;
+    color: #60a5fa;
+}
+
+body.dark-mode .item-preco,
+body.dark-mode .reserva-price {
+    color: #60a5fa;
+}
+
+body.dark-mode .btn-reservar,
+body.dark-mode .search-button,
+body.dark-mode .checkout-button,
+body.dark-mode .btn-primary,
+body.dark-mode .btn-finalizar,
+body.dark-mode .btn-modal-confirm {
+    background: #60a5fa;
+    color: #1a1a1a;
+}
+
+body.dark-mode .btn-reservar:hover,
+body.dark-mode .search-button:hover,
+body.dark-mode .checkout-button:hover,
+body.dark-mode .btn-primary:hover,
+body.dark-mode .btn-finalizar:hover,
+body.dark-mode .btn-modal-confirm:hover {
+    background: #3b82f6;
+}
+
+body.dark-mode .btn-detalhes,
+body.dark-mode .secondary-button,
+body.dark-mode .btn-secondary,
+body.dark-mode .btn-continuar,
+body.dark-mode .btn-clear,
+body.dark-mode .btn-modal-cancel {
+    background: #1a1a1a;
+    border-color: #404040;
+    color: #b0b0b0;
+}
+
+body.dark-mode .btn-detalhes:hover,
+body.dark-mode .secondary-button:hover,
+body.dark-mode .btn-secondary:hover,
+body.dark-mode .btn-continuar:hover,
+body.dark-mode .btn-clear:hover,
+body.dark-mode .btn-modal-cancel:hover {
+    background: #2d2d2d;
+    color: #e0e0e0;
 }
 
 body.dark-mode footer {
@@ -1338,19 +1436,83 @@ body.dark-mode footer {
     color: #b0b0b0;
 }
 
-body.dark-mode .filters {
-    background: #2d2d2d;
-    border-color: #404040;
-}
-
 body.dark-mode input,
-body.dark-mode select {
+body.dark-mode select,
+body.dark-mode textarea {
     background: #1a1a1a;
     border-color: #404040;
     color: #e0e0e0;
 }
 
+body.dark-mode input::placeholder {
+    color: #6c757d;
+}
+
 body.dark-mode .theme-toggle {
     background: #1a1a1a !important;
     border-color: #404040 !important;
+}
+
+body.dark-mode .modal {
+    background: rgba(0,0,0,0.8);
+}
+
+body.dark-mode .modal-content h3,
+body.dark-mode .modal-content label {
+    color: #e0e0e0;
+}
+
+body.dark-mode .carrinho-vazio {
+    background: #2d2d2d;
+    border-color: #404040;
+}
+
+body.dark-mode .carrinho-vazio p {
+    color: #b0b0b0;
+}
+
+body.dark-mode .autocomplete-items {
+    background: #2d2d2d;
+    border-color: #404040;
+}
+
+body.dark-mode .autocomplete-items div {
+    border-bottom-color: #404040;
+}
+
+body.dark-mode .autocomplete-items div:hover {
+    background: #1a1a1a;
+}
+
+body.dark-mode .trip-card .price {
+    color: #fbbf24;
+}
+
+body.dark-mode .item-info h3,
+body.dark-mode .item-info .route {
+    color: #e0e0e0;
+}
+
+body.dark-mode .resumo-linha,
+body.dark-mode .resumo-total {
+    color: #e0e0e0;
+}
+
+body.dark-mode .passageiros-form {
+    background: #2d2d2d;
+    border-color: #404040;
+}
+
+body.dark-mode .passageiro-input label {
+    color: #b0b0b0;
+}
+
+body.dark-mode .carrinho-resumo {
+    background: #2d2d2d;
+    border-color: #404040;
+}
+
+body.dark-mode .price-highlight {
+    background: #1a3a52;
+    border-color: #60a5fa;
 }

@@ -16,6 +16,9 @@
                 <button type="submit" onclick="localStorage.removeItem('auth_token');">Logout</button>
             </form>
         @else
+            <button type="button" id="theme-toggle" class="theme-toggle" title="Alternar tema">
+                <span class="theme-icon">🌙</span>
+            </button>
             <a href="{{ route('login') }}">Login</a>
             <a href="{{ route('register') }}">Registar</a>
         @endauth
