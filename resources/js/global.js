@@ -5,9 +5,9 @@ document.addEventListener('DOMContentLoaded', () => {
 function initGlobal() {
     setupLogoNavigation();
     updateCartCount();
-    // DON'T call updateHeader() - navbar is server-rendered by Laravel
     syncAuthWithLaravel();
     restoreTheme();
+    setupThemeToggle();
 }
 
 function setupLogoNavigation() {
@@ -156,17 +156,33 @@ function getCurrentUser() {
 }
 
 // 5. TEMA (DARK MODE)
+function setupThemeToggle() {
+    const themeBtn = document.getElementById('theme-toggle');
+    if (themeBtn) {
+        themeBtn.addEventListener('click', toggleDarkMode);
+        updateThemeIcon();
+    }
+}
+
 function toggleDarkMode() {
     document.body.classList.toggle('dark-mode');
     const isDark = document.body.classList.contains('dark-mode');
     localStorage.setItem('theme', isDark ? 'dark' : 'light');
-    showToast(`Modo ${isDark ? 'escuro' : 'claro'} ativado.`, 'info');
+    updateThemeIcon();
+}
+
+function updateThemeIcon() {
+    const icon = document.querySelector('.theme-icon');
+    if (icon) {
+        icon.textContent = document.body.classList.contains('dark-mode') ? '☀️' : '🌙';
+    }
 }
 
 function restoreTheme() {
     if (localStorage.getItem('theme') === 'dark') {
         document.body.classList.add('dark-mode');
     }
+    updateThemeIcon();
 }
 
 // 6. FEEDBACK VISUAL (TOASTS)

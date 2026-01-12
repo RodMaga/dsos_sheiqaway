@@ -11,7 +11,7 @@
     <title>sheiqaway - Detalhes da Viagem</title>
     @vite(['resources/css/pages.css', 'resources/js/global.js', 'resources/js/detalhes.js'])
 </head>
-<body>
+<body class="detalhes-page">
     @include('navbar')
     
     <main>

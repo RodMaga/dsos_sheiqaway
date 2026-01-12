@@ -8,6 +8,9 @@
             <a href="{{ route('viagens') }}">Viajar</a>
             <a href="{{ route('carrinho') }}">Carrinho</a>
             <a href="{{ route('dashboard') }}">Dashboard</a>
+            <button type="button" id="theme-toggle" class="theme-toggle" title="Alternar tema">
+                <span class="theme-icon">🌙</span>
+            </button>
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
                 <button type="submit" onclick="localStorage.removeItem('auth_token');">Logout</button>

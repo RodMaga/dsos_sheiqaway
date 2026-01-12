@@ -74,6 +74,25 @@ header nav button:hover {
     background: #dc2626;
 }
 
+.theme-toggle {
+    background: #f8f9fa !important;
+    color: #6c757d !important;
+    border: 1px solid #dee2e6 !important;
+    padding: 0.5rem 0.8rem !important;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1.2rem;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.theme-toggle:hover {
+    background: #dee2e6 !important;
+    transform: scale(1.1);
+}
+
 /* === RESET E BASE === */
 *, *::before, *::after {
     box-sizing: border-box;
@@ -1186,6 +1205,49 @@ footer {
 }
 
 /* === DETALHES PAGE === */
+body.detalhes-page {
+    background: #f8f9fa;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: #2c3e50;
+    margin: 0;
+}
+
+body.detalhes-page main {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+body.detalhes-page h2 {
+    color: #2c3e50;
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+body.detalhes-page h3 {
+    color: #2c3e50;
+}
+
+body.detalhes-page h4 {
+    color: #2c3e50;
+    font-weight: 600;
+}
+
+body.detalhes-page p {
+    color: #2c3e50;
+}
+
+body.detalhes-page strong {
+    color: #2c3e50;
+}
+
+body.detalhes-page .content-card {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
 .trip-details-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -1213,6 +1275,7 @@ footer {
 
 .secondary-button:hover {
     background: #dee2e6;
+    color: #495057;
 }
 
 @media (max-width: 768px) {
@@ -1228,4 +1291,66 @@ footer {
     body.viagens-page h1, body.carrinho-page h1 { font-size: 2rem; }
     .filter-grid { grid-template-columns: 1fr; }
     .dashboard-grid { grid-template-columns: 1fr; }
+}
+
+/* === DARK MODE === */
+body.dark-mode {
+    background: #1a1a1a;
+    color: #e0e0e0;
+}
+
+body.dark-mode header {
+    background: #2d2d2d;
+    border-bottom-color: #404040;
+}
+
+body.dark-mode header nav a {
+    color: #b0b0b0;
+}
+
+body.dark-mode header nav a:hover {
+    color: #60a5fa;
+}
+
+body.dark-mode .content-card,
+body.dark-mode .viagem-card,
+body.dark-mode .card,
+body.dark-mode .carrinho-item,
+body.dark-mode .modal-content {
+    background: #2d2d2d;
+    border-color: #404040;
+    color: #e0e0e0;
+}
+
+body.dark-mode h1, body.dark-mode h2, body.dark-mode h3, body.dark-mode h4 {
+    color: #e0e0e0;
+}
+
+body.dark-mode .info-label,
+body.dark-mode .info-value,
+body.dark-mode p {
+    color: #b0b0b0;
+}
+
+body.dark-mode footer {
+    background: #2d2d2d;
+    border-top-color: #404040;
+    color: #b0b0b0;
+}
+
+body.dark-mode .filters {
+    background: #2d2d2d;
+    border-color: #404040;
+}
+
+body.dark-mode input,
+body.dark-mode select {
+    background: #1a1a1a;
+    border-color: #404040;
+    color: #e0e0e0;
+}
+
+body.dark-mode .theme-toggle {
+    background: #1a1a1a !important;
+    border-color: #404040 !important;
 }
