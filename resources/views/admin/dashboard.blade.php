@@ -30,8 +30,8 @@
                         <label for="discount_type">Tipo de Desconto <span class="required">*</span></label>
                         <select id="discount_type" name="discount_type" required>
                             <option value="">Selecione...</option>
-                            <option value="PERCENTAGE">Percentagem (%)</option>
-                            <option value="FIXED">Valor Fixo (€)</option>
+                            <option value="percentage">Percentagem (%)</option>
+                            <option value="fixed">Valor Fixo (€)</option>
                         </select>
                         <small>Como o desconto será aplicado</small>
                     </div>

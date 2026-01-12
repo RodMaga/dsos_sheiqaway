@@ -319,6 +319,20 @@ function finalizarCompra() {
     btnFinalizar.textContent = 'Processando...';
     btnFinalizar.style.opacity = '0.6';
     
+    // Calculate total and points discount if applicable
+    let totalBeforePoints = 0;
+    carrinho.forEach(item => {
+        const itemPrice = item.finalPrice !== undefined ? item.finalPrice : item.preco;
+        totalBeforePoints += itemPrice * item.quantidade;
+    });
+    
+    let pointsDiscountPercentage = 0;
+    if (selectedOption === 'descontar') {
+        const maxPointsToUse = Math.min(userPoints, totalBeforePoints * 10);
+        const desconto = maxPointsToUse / 10;
+        pointsDiscountPercentage = desconto / totalBeforePoints;
+    }
+    
     const reservas = [];
     const nomes = [];
     let todosPreenchidos = true;
@@ -349,11 +363,17 @@ function finalizarCompra() {
                 input.style.borderColor = '#e0e0e0';
                 nomes.push(nome.toLowerCase());
                 // Use finalPrice if available (with campaign discount), otherwise use preco
-                const itemPrice = item.finalPrice !== undefined ? item.finalPrice : item.preco;
+                let itemPrice = item.finalPrice !== undefined ? item.finalPrice : item.preco;
+                
+                // Apply points discount proportionally if selected
+                if (pointsDiscountPercentage > 0) {
+                    itemPrice = itemPrice * (1 - pointsDiscountPercentage);
+                }
+                
                 reservas.push({
                     trip_id: parseInt(item.tripId),
                     passenger_name: nome,
-                    price: parseFloat(itemPrice),
+                    price: parseFloat(itemPrice.toFixed(2)),
                     quantity: 1
                 });
             }
@@ -373,17 +393,38 @@ function finalizarCompra() {
         return;
     }
     
+    // Calculate points used if points were selected
+    const usarPontos = selectedOption === 'descontar';
+    let pontosUsados = 0;
+    if (usarPontos) {
+        const maxPointsToUse = Math.min(userPoints, totalBeforePoints * 10);
+        pontosUsados = maxPointsToUse;
+    }
+    
     fetch('/payment/create-checkout-session', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
         },
-        body: JSON.stringify({ reservas })
+        body: JSON.stringify({ 
+            reservas,
+            usar_pontos: usarPontos,
+            pontos_usados: pontosUsados
+        })
     })
-    .then(res => res.json())
+    .then(async res => {
+        if (!res.ok) {
+            const text = await res.text();
+            console.error('Server error response:', text);
+            throw new Error('Erro no servidor. Verifique se o Stripe está configurado.');
+        }
+        return res.json();
+    })
     .then(data => {
         if (data.id) {
+            // Clear cart before redirecting to Stripe
+            localStorage.removeItem('carrinho');
             return stripe.redirectToCheckout({ sessionId: data.id });
         } else {
             throw new Error(data.error || 'Erro ao criar sessão de pagamento');

@@ -161,11 +161,17 @@ class ReservationController extends Controller
 
             if (!$user) {
                 Auth::logout();
+                \Log::error('storeMultiple: User not authenticated');
                 return response()->json([
                     'success' => false,
                     'message' => 'Sessão inválida. Por favor, faça login novamente.'
                 ], 401);
             }
+
+            \Log::info('storeMultiple: Starting', [
+                'user_id' => $userId,
+                'request_data' => $request->all()
+            ]);
 
             $request->validate([
                 'reservas' => 'required|array',
@@ -180,196 +186,141 @@ class ReservationController extends Controller
             $totalAmount = 0;
             $usarPontos = $request->input('usar_pontos', false);
 
+            \Log::info('storeMultiple: After validation', [
+                'usar_pontos' => $usarPontos,
+                'reservas_count' => count($request->reservas)
+            ]);
+
             DB::beginTransaction();
 
-            // Calculate total amount first
-            foreach ($request->reservas as $reservaData) {
-                // Buscar capacidade da API externa
-                $viagem = $this->getViagemById($reservaData['trip_id']);
-                
-                $capacidadeMaxima = $viagem['capacidade'] ?? 50;
-                
-                // Verificar lugares disponíveis para esta viagem
-                $lugaresOcupados = Reservation::where('trip_id', $reservaData['trip_id'])
-                    ->where('status', 'confirmado')
-                    ->count();
-                
-                $lugaresDisponiveis = $capacidadeMaxima - $lugaresOcupados;
-                
-                if ($reservaData['quantity'] > $lugaresDisponiveis) {
-                    DB::rollBack();
-                    return response()->json([
-                        'success' => false,
-                        'message' => "Apenas {$lugaresDisponiveis} lugar(es) disponível(eis) para a viagem {$reservaData['trip_id']}."
-                    ], 400);
-                }
-                
-                $totalAmount += $reservaData['price'] * $reservaData['quantity'];
-            }
-
-            // Calculate points to use/receive
-            $pontosGanhos = 0;
-            $pontosUsados = 0;
-            $totalDiscount = 0;
-
-            if ($usarPontos) {
-                // User wants to use points for discount
-                // Maximum points that can be used = total price * 10
-                $maxPointsToUse = $totalAmount * 10;
-                
-                // Cap by user's available points
-                $pontosUsados = min($user->points, $maxPointsToUse);
-                
-                // Calculate total discount: points / 10 = discount
-                $totalDiscount = $pontosUsados / 10;
-                
-                // Deduct points from user
-                $user->points -= $pontosUsados;
-                $user->save();
-            } else {
-                // User wants to earn points: 1 point per each 10€
-                $pontosGanhos = floor($totalAmount / 10);
-                $user->points += $pontosGanhos;
-                $user->save();
-            }
-
-            // Process each reservation
-            foreach ($request->reservas as $reservaData) {
-                $originalPrice = $reservaData['price'];
-                $quantity = $reservaData['quantity'];
-                
-                for ($i = 0; $i < $quantity; $i++) {
-                    // Calculate discount per reservation if using points
-                    $reservationPrice = $originalPrice;
-                    $pointsSpentThisReservation = 0;
-                    $pointsReceivedThisReservation = 0;
+            // When usar_pontos is false, prices are already final (with discounts applied)
+            // We just need to save them as-is and award points
+            if (!$usarPontos) {
+                // Prices already include all discounts, just save them
+                foreach ($request->reservas as $reservaData) {
+                    // Buscar capacidade da API externa
+                    $viagem = $this->getViagemById($reservaData['trip_id']);
                     
-                    if ($usarPontos && $totalAmount > 0) {
-                        // Proportional discount for this reservation
-                        $proportionalDiscount = ($originalPrice / $totalAmount) * $totalDiscount;
-                        $reservationPrice = max(0, $originalPrice - $proportionalDiscount);
-                        $pointsSpentThisReservation = round(($originalPrice / $totalAmount) * $pontosUsados);
-                    } else {
-                        // Points earned per reservation
-                        $pointsReceivedThisReservation = floor($originalPrice / 10);
+                    $capacidadeMaxima = $viagem['capacidade'] ?? 50;
+                    
+                    // Verificar lugares disponíveis para esta viagem
+                    $lugaresOcupados = Reservation::where('trip_id', $reservaData['trip_id'])
+                        ->where('status', 'confirmado')
+                        ->count();
+                    
+                    $lugaresDisponiveis = $capacidadeMaxima - $lugaresOcupados;
+                    
+                    if ($reservaData['quantity'] > $lugaresDisponiveis) {
+                        DB::rollBack();
+                        \Log::error('storeMultiple: Not enough seats', [
+                            'trip_id' => $reservaData['trip_id'],
+                            'requested' => $reservaData['quantity'],
+                            'available' => $lugaresDisponiveis
+                        ]);
+                        return response()->json([
+                            'success' => false,
+                            'message' => "Apenas {$lugaresDisponiveis} lugar(es) disponível(eis) para a viagem {$reservaData['trip_id']}."
+                        ], 400);
                     }
                     
-                    // Create reservation with adjusted price if using points
-                    $reservation = new Reservation();
-                    $reservation->user_id = $userId;
-                    $reservation->trip_id = $reservaData['trip_id'];
-                    $reservation->passenger_name = $reservaData['passenger_name'];
-                    $reservation->price = $reservationPrice;
-                    $reservation->status = 'confirmado';
-                    $reservation->save();
+                    $finalPrice = $reservaData['price']; // Price already has all discounts
+                    $quantity = $reservaData['quantity'];
+                    $totalAmount += $finalPrice * $quantity;
                     
-                    // Call stored procedure to track points
-                    DB::statement('CALL insert_reservas_pontos(?, ?, ?)', [
-                        $reservation->id,
-                        $pointsSpentThisReservation,
-                        $pointsReceivedThisReservation
-                    ]);
-                    
-                    // Create payment for each reservation
-                    $payment = new Payment();
-                    $payment->reservation_id = $reservation->id;
-                    $payment->user_id = $userId;
-                    $payment->amount = $reservationPrice;
-                    $payment->currency = 'EUR';
-                    $payment->payment_method = 'card';
-                    $payment->status = 'completed';
-                    $payment->transaction_id = 'TXN-' . strtoupper(uniqid());
-                    $payment->paid_at = now();
-                    $payment->save();
-                    
-                    $reservasCriadas[] = $reservation;
+                    for ($i = 0; $i < $quantity; $i++) {
+                        // Points earned: 1 point per 10€
+                        $pointsEarned = floor($finalPrice / 10);
+                        
+                        // Create reservation with the final price from Stripe
+                        $reservation = new Reservation();
+                        $reservation->user_id = $userId;
+                        $reservation->trip_id = $reservaData['trip_id'];
+                        $reservation->passenger_name = $reservaData['passenger_name'];
+                        $reservation->price = $finalPrice;
+                        $reservation->status = 'confirmado';
+                        $reservation->save();
+                        
+                        \Log::info('storeMultiple: Reservation created', [
+                            'id' => $reservation->id,
+                            'trip_id' => $reservation->trip_id,
+                            'price' => $reservation->price,
+                            'passenger' => $reservation->passenger_name
+                        ]);
+                        
+                        // Call stored procedure to track points (0 spent, points earned)
+                        DB::statement('CALL insert_reservas_pontos(?, ?, ?)', [
+                            $reservation->id,
+                            0, // points spent
+                            $pointsEarned
+                        ]);
+                        
+                        // Award points to user
+                        $user->points += $pointsEarned;
+                        
+                        // Create payment for each reservation
+                        $payment = new Payment();
+                        $payment->reservation_id = $reservation->id;
+                        $payment->user_id = $userId;
+                        $payment->amount = $finalPrice;
+                        $payment->currency = 'EUR';
+                        $payment->payment_method = 'card';
+                        $payment->status = 'completed';
+                        $payment->transaction_id = 'STRIPE-' . strtoupper(uniqid());
+                        $payment->paid_at = now();
+                        $payment->save();
+                        
+                        $reservasCriadas[] = $reservation;
+                    }
                 }
+                
+                $user->save();
+                $pontosGanhos = $user->points;
+                $pontosUsados = 0;
+                
+            } else {
+                // Original logic for when using points at checkout time
+                // This won't be used from Stripe payments
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Este método não suporta usar_pontos=true via Stripe'
+                ], 400);
             }
 
             DB::commit();
+
+            \Log::info('storeMultiple: Success', [
+                'reservas_created' => count($reservasCriadas),
+                'total_paid' => $totalAmount,
+                'pontos_ganhos' => $pontosGanhos
+            ]);
 
             return response()->json([
                 'success' => true,
                 'message' => count($reservasCriadas) . ' reserva(s) criada(s) com sucesso!',
                 'reservas' => $reservasCriadas,
                 'total_paid' => $totalAmount,
-                'pontos_ganhos' => $usarPontos ? 0 : $pontosGanhos,
-                'pontos_usados' => $usarPontos ? $pontosUsados : 0
+                'pontos_ganhos' => $pontosGanhos,
+                'pontos_usados' => $pontosUsados
             ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            DB::rollBack();
+            \Log::error('storeMultiple: Validation error', ['errors' => $e->errors()]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Dados inválidos: ' . json_encode($e->errors())
+            ], 422);
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Erro ao criar reservas múltiplas: ' . $e->getMessage());
+            \Log::error('Erro ao criar reservas múltiplas: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Erro ao criar reservas. Por favor, tente novamente.'
+                'message' => 'Erro ao criar reservas: ' . $e->getMessage()
             ], 500);
         }
     }
 
-    public function applyCampaign(Request $request)
-    {
-        try {
-            $request->validate([
-                'price' => 'required|numeric|min:0',
-                'duration' => 'required|integer|min:0',
-                'airline' => 'required|string',
-                'date' => 'required|date',
-            ]);
-
-            $price = $request->price;
-            $duration = $request->duration;
-            $airline = $request->airline;
-            $date = $request->date;
-
-            
-            // Convert ISO datetime to DATE format (YYYY-MM-DD)
-            if (strpos($date, 'T') !== false) {
-                $date = substr($date, 0, 10); // Extract date part only
-            }
-
-            // Log the parameters being sent to the stored procedure
-            Log::info('Calling apply_campaign_to_trip with parameters:', [
-                'price' => $price,
-                'duration' => $duration,
-                'airline' => $airline,
-                'date' => $date
-            ]);
-
-            // Call the stored procedure
-            $result = DB::select('CALL apply_campaign_to_trip(?, ?, ?, ?, @final_price)', [
-                $price,
-                $duration,
-                $airline,
-                $date
-            ]);
-
-            // Get the output parameter
-            $finalPrice = DB::select('SELECT @final_price as final_price')[0]->final_price;
-
-            // Log the result
-            Log::info('apply_campaign_to_trip result:', [
-                'original_price' => $price,
-                'final_price' => $finalPrice,
-                'discount_applied' => $price != $finalPrice
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'original_price' => $price,
-                'final_price' => $finalPrice,
-                'discount_applied' => $price != $finalPrice
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Erro ao aplicar campanha: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao aplicar campanha.',
-                'original_price' => $request->price,
-                'final_price' => $request->price,
-                'discount_applied' => false
-            ], 500);
-        }
-    }
     public function lugaresDisponiveisBulk()
     {
         try {
@@ -541,6 +492,71 @@ class ReservationController extends Controller
             DB::rollBack();
             Log::error('Erro ao eliminar reserva: ' . $e->getMessage());
             return response()->json(['success' => false, 'message' => 'Erro ao eliminar reserva'], 500);
+        }
+    }
+
+    public function applyCampaign(Request $request)
+    {
+        try {
+            $request->validate([
+                'price' => 'required|numeric|min:0',
+                'duration' => 'required|integer|min:0',
+                'airline' => 'required|string',
+                'date' => 'required|date',
+            ]);
+
+            $price = $request->price;
+            $duration = $request->duration;
+            $airline = $request->airline;
+            $date = $request->date;
+
+            
+            // Convert ISO datetime to DATE format (YYYY-MM-DD)
+            if (strpos($date, 'T') !== false) {
+                $date = substr($date, 0, 10); // Extract date part only
+            }
+
+            // Log the parameters being sent to the stored procedure
+            Log::info('Calling apply_campaign_to_trip with parameters:', [
+                'price' => $price,
+                'duration' => $duration,
+                'airline' => $airline,
+                'date' => $date
+            ]);
+
+            // Call the stored procedure
+            $result = DB::select('CALL apply_campaign_to_trip(?, ?, ?, ?, @final_price)', [
+                $price,
+                $duration,
+                $airline,
+                $date
+            ]);
+
+            // Get the output parameter
+            $finalPrice = DB::select('SELECT @final_price as final_price')[0]->final_price;
+
+            // Log the result
+            Log::info('apply_campaign_to_trip result:', [
+                'original_price' => $price,
+                'final_price' => $finalPrice,
+                'discount_applied' => $price != $finalPrice
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'original_price' => $price,
+                'final_price' => $finalPrice,
+                'discount_applied' => $price != $finalPrice
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Erro ao aplicar campanha: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao aplicar campanha.',
+                'original_price' => $request->price,
+                'final_price' => $request->price,
+                'discount_applied' => false
+            ], 500);
         }
     }
 }

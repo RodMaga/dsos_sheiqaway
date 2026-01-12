@@ -20,6 +20,8 @@ use App\Http\Controllers\Auth\VerifyEmailController;
 // ------------------- ADMIN BACKOFFICE -------------------
 Route::middleware(['auth', \App\Http\Middleware\IsAdmin::class])->prefix('admin')->group(function () {
     Route::get('/', [AdminController::class, 'index'])->name('admin.dashboard');
+    Route::get('/dashboard', [AdminController::class, 'index'])->name('admin.dashboard.view');
+    Route::post('/campaigns/store', [AdminController::class, 'storeCampaign'])->name('admin.campaigns.store');
     Route::get('/users', [AdminController::class, 'users'])->name('admin.users');
     Route::get('/reservations', [AdminController::class, 'reservations'])->name('admin.reservations');
     Route::post('/users/{id}/toggle-admin', [AdminController::class, 'toggleAdmin'])->name('admin.users.toggle');
@@ -36,9 +38,6 @@ Route::middleware('auth')->group(function () {
 });
 
 // ------------------- RESERVAS (API) -------------------
-Route::middleware('auth')->group(function () {
-// ------------------- RESERVAS -------------------
-use App\Http\Controllers\ReservationController;
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/api/reservas', [ReservationController::class, 'index'])->name('reservas.index');
     Route::get('/api/reservas/{id}', [ReservationController::class, 'show'])->name('reservas.show');
@@ -53,13 +52,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/api/user-points', function () {
         return response()->json(['points' => auth()->user()->points ?? 0]);
     });
-});
-
-// ------------------- ADMIN -------------------
-use App\Http\Controllers\AdminController;
-Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
-    Route::get('/dashboard', [AdminController::class, 'index'])->name('admin.dashboard');
-    Route::post('/campaigns/store', [AdminController::class, 'storeCampaign'])->name('admin.campaigns.store');
 });
 
 // ------------------- ROTAS PÚBLICAS -------------------
