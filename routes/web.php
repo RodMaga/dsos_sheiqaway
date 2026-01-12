@@ -17,9 +17,16 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 
 
+use App\Http\Controllers\Auth\DevEmailVerificationController;
+
+// ------------------- DESENVOLVIMENTO - VERIFICAÇÃO MANUAL -------------------
+Route::middleware('auth')->group(function () {
+    Route::get('/dev/verify-email', [DevEmailVerificationController::class, 'verify'])->name('dev.verify');
+});
+
 // ------------------- RESERVAS -------------------
 use App\Http\Controllers\ReservationController;
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'verified', 'validate.reservation'])->group(function () {
     Route::get('/api/reservas', [ReservationController::class, 'index'])->name('reservas.index');
     Route::post('/reservar', [ReservationController::class, 'store'])->name('reservar.store');
     Route::post('/reservar-multiplas', [ReservationController::class, 'storeMultiple'])->name('reservar.multiple');
@@ -56,7 +63,8 @@ Route::middleware('auth')->group(function () {
 });
 
 // ------------------- ROTAS PROTEGIDAS (APÓS LOGIN) -------------------
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'verified'])->group(function () {
+    
     // Páginas do Utilizador
     Route::get('/viagens', function () { return view('viagens'); })->name('viagens');
     Route::get('/dashboard', function () { return view('dashboard'); })->name('dashboard');
