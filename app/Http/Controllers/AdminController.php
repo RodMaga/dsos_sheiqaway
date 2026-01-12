@@ -26,15 +26,14 @@ class AdminController extends Controller
             ->limit(10)
             ->get();
 
-        $viagens = \Cache::remember('viagens_api', 300, function () {
+        $viagens = collect(\Cache::remember('viagens_api', 300, function () {
             try {
                 $response = \Http::withoutVerifying()->timeout(10)->get("https://vs-gate.dei.isep.ipp.pt:10923/api/viagens");
-                $data = $response->json();
-                return is_array($data) ? collect($data) : collect([]);
+                return $response->json() ?? [];
             } catch (\Exception $e) {
-                return collect([]);
+                return [];
             }
-        });
+        }));
 
         $topDestinations = Reservation::select('trip_id', DB::raw('COUNT(*) as total'))
             ->where('status', 'confirmado')
