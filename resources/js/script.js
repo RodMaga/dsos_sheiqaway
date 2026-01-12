@@ -33,7 +33,22 @@ class SearchManager {
 
             const tripsResponse = await fetch('/api/trips', { headers });
             if (!tripsResponse.ok) throw new Error('Acesso negado ou erro na API');
-            this.allTrips = await tripsResponse.json();
+            const apiTrips = await tripsResponse.json();
+            
+            // Adaptar formato da API externa para o formato esperado
+            this.allTrips = apiTrips.map(trip => ({
+                id: trip.id,
+                from: this.getCityName(trip.origem),
+                to: this.getCityName(trip.destino),
+                date: new Date(trip.data_partida).toISOString().split('T')[0],
+                depart: new Date(trip.data_partida).toTimeString().slice(0,5),
+                durationMin: trip.duracao_min,
+                providerId: trip.companhia,
+                price: { base: trip.preco },
+                capacity: 100,
+                booked: 0,
+                bagsIncluded: 1
+            }));
 
             const providersResponse = await fetch('/api/providers', { headers });
             if (providersResponse.ok) {
@@ -51,6 +66,18 @@ class SearchManager {
         } catch (error) {
             console.error('Erro de autenticação:', error);
         }
+    }
+    
+    getCityName(code) {
+        const cityNames = {
+            'OPO': 'Porto', 'LIS': 'Lisboa', 'FAR': 'Faro', 'POR': 'Ponta Delgada',
+            'LON': 'Londres', 'PAR': 'Paris', 'MAD': 'Madrid', 'BER': 'Berlim',
+            'BRU': 'Bruxelas', 'ROM': 'Roma', 'AMS': 'Amesterdão', 'DUB': 'Dublin',
+            'NYC': 'Nova Iorque', 'MIA': 'Miami', 'LAX': 'Los Angeles', 'SFO': 'São Francisco',
+            'RIO': 'Rio de Janeiro', 'SAO': 'São Paulo', 'BUE': 'Buenos Aires', 'MEX': 'Cidade do México',
+            'TOK': 'Tóquio', 'BEI': 'Pequim', 'DUB': 'Dubai', 'SIN': 'Singapura'
+        };
+        return cityNames[code] || code;
     }
 
     showAllTripsInitially() {
