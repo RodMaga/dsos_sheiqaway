@@ -188,12 +188,22 @@ function removerItem(index) {
     carregarCarrinho();
 }
 
+const stripe = Stripe('pk_test_51SooNOIQBLR7czrRnsWeak4sfG9oz0M3PrxMBDmRqp7XvPiygViQPp4JTQWDfjHJhGtotGumVTMhaUohNC0M8BHm00BKmkeTmt');
+
 function finalizarCompra() {
     const carrinho = JSON.parse(localStorage.getItem('carrinho') || '[]');
     const selectedOption = document.querySelector('input[name="pontos-option"]:checked')?.value;
     
+    const btnFinalizar = document.querySelector('.btn-finalizar');
+    if (btnFinalizar.disabled) return;
+    btnFinalizar.disabled = true;
+    btnFinalizar.textContent = 'Processando...';
+    btnFinalizar.style.opacity = '0.6';
+    
     const reservas = [];
+    const nomes = [];
     let todosPreenchidos = true;
+    let erros = [];
     
     carrinho.forEach((item, itemIndex) => {
         for (let i = 0; i < item.quantidade; i++) {
@@ -202,9 +212,23 @@ function finalizarCompra() {
             
             if (!nome) {
                 todosPreenchidos = false;
-                input.style.borderColor = '#dc2626';
+                input.style.borderColor = '#f43f5e';
+                erros.push('Preencha todos os nomes');
+            } else if (nome.length < 3) {
+                todosPreenchidos = false;
+                input.style.borderColor = '#f43f5e';
+                erros.push('Nome deve ter pelo menos 3 caracteres');
+            } else if (!/^[a-zA-ZÀ-ſ\s]+$/.test(nome)) {
+                todosPreenchidos = false;
+                input.style.borderColor = '#f43f5e';
+                erros.push('Nome deve conter apenas letras');
+            } else if (nomes.includes(nome.toLowerCase())) {
+                todosPreenchidos = false;
+                input.style.borderColor = '#f43f5e';
+                erros.push(`Nome "${nome}" já foi usado`);
             } else {
                 input.style.borderColor = '#e0e0e0';
+                nomes.push(nome.toLowerCase());
                 reservas.push({
                     trip_id: parseInt(item.tripId),
                     passenger_name: nome,
@@ -216,11 +240,106 @@ function finalizarCompra() {
     });
     
     if (!todosPreenchidos) {
+        btnFinalizar.disabled = false;
+        btnFinalizar.textContent = 'Finalizar Compra';
+        btnFinalizar.style.opacity = '1';
+        
         const msg = document.createElement('div');
-        msg.style.cssText = 'position:fixed;top:20px;right:20px;background:#dc2626;color:white;padding:1rem 1.5rem;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.2);z-index:9999;';
-        msg.textContent = 'Por favor, preencha o nome de todos os passageiros!';
+        msg.style.cssText = 'position:fixed;top:20px;right:20px;background:#f43f5e;color:white;padding:1rem 1.5rem;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.2);z-index:9999;max-width:400px;';
+        msg.innerHTML = '<strong>Erros encontrados:</strong><br>' + [...new Set(erros)].join('<br>');
+        document.body.appendChild(msg);
+        setTimeout(() => msg.remove(), 4000);
+        return;
+    }
+    
+    fetch('/payment/create-checkout-session', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+        },
+        body: JSON.stringify({ reservas })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.id) {
+            return stripe.redirectToCheckout({ sessionId: data.id });
+        } else {
+            throw new Error(data.error || 'Erro ao criar sessão de pagamento');
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        btnFinalizar.disabled = false;
+        btnFinalizar.textContent = 'Finalizar Compra';
+        btnFinalizar.style.opacity = '1';
+        
+        const msg = document.createElement('div');
+        msg.style.cssText = 'position:fixed;top:20px;right:20px;background:#f43f5e;color:white;padding:1rem 1.5rem;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.2);z-index:9999;';
+        msg.textContent = 'Erro: ' + error.message;
         document.body.appendChild(msg);
         setTimeout(() => msg.remove(), 3000);
+    });
+}
+
+function finalizarCompraSemStripe() {
+    const carrinho = JSON.parse(localStorage.getItem('carrinho') || '[]');
+    
+    const btnFinalizar = document.querySelector('.btn-finalizar');
+    if (btnFinalizar.disabled) return;
+    btnFinalizar.disabled = true;
+    btnFinalizar.textContent = 'Processando...';
+    btnFinalizar.style.opacity = '0.6';
+    
+    const reservas = [];
+    const nomes = [];
+    let todosPreenchidos = true;
+    let erros = [];
+    
+    carrinho.forEach((item, itemIndex) => {
+        for (let i = 0; i < item.quantidade; i++) {
+            const input = document.getElementById(`passageiro-${itemIndex}-${i}`);
+            const nome = input?.value.trim();
+            
+            if (!nome) {
+                todosPreenchidos = false;
+                input.style.borderColor = '#f43f5e';
+                erros.push('Preencha todos os nomes');
+            } else if (nome.length < 3) {
+                todosPreenchidos = false;
+                input.style.borderColor = '#f43f5e';
+                erros.push('Nome deve ter pelo menos 3 caracteres');
+            } else if (!/^[a-zA-ZÀ-ÿ\s]+$/.test(nome)) {
+                todosPreenchidos = false;
+                input.style.borderColor = '#f43f5e';
+                erros.push('Nome deve conter apenas letras');
+            } else if (nomes.includes(nome.toLowerCase())) {
+                todosPreenchidos = false;
+                input.style.borderColor = '#f43f5e';
+                erros.push(`Nome "${nome}" já foi usado`);
+            } else {
+                input.style.borderColor = '#e0e0e0';
+                nomes.push(nome.toLowerCase());
+                reservas.push({
+                    trip_id: parseInt(item.tripId),
+                    passenger_name: nome,
+                    price: parseFloat(item.preco),
+                    quantity: 1
+                });
+            }
+        }
+    });
+    
+    if (!todosPreenchidos) {
+        btnFinalizar.disabled = false;
+        btnFinalizar.textContent = 'Finalizar Compra';
+        btnFinalizar.style.opacity = '1';
+        
+        const msg = document.createElement('div');
+        msg.style.cssText = 'position:fixed;top:20px;right:20px;background:#f43f5e;color:white;padding:1rem 1.5rem;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.2);z-index:9999;max-width:400px;';
+        msg.innerHTML = '<strong>Erros encontrados:</strong><br>' + [...new Set(erros)].join('<br>');
+        document.body.appendChild(msg);
+        setTimeout(() => msg.remove(), 4000);
         return;
     }
     
@@ -273,9 +392,13 @@ function finalizarCompra() {
     })
     .catch(error => {
         console.error('Erro:', error);
+        btnFinalizar.disabled = false;
+        btnFinalizar.textContent = 'Finalizar Compra';
+        btnFinalizar.style.opacity = '1';
+        
         if (error && error.message && !error.message.includes('login')) {
             const msg = document.createElement('div');
-            msg.style.cssText = 'position:fixed;top:20px;right:20px;background:#dc2626;color:white;padding:1rem 1.5rem;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.2);z-index:9999;';
+            msg.style.cssText = 'position:fixed;top:20px;right:20px;background:#f43f5e;color:white;padding:1rem 1.5rem;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.2);z-index:9999;';
             msg.textContent = 'Erro ao finalizar compra: ' + error.message;
             document.body.appendChild(msg);
             setTimeout(() => msg.remove(), 3000);

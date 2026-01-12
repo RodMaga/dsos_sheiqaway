@@ -6,6 +6,7 @@
     <title>sheiqaway - Carrinho</title>
     <meta name="csrf-token" content="{{ csrf_token() }}">
     @vite(['resources/css/pages.css', 'resources/js/global.js', 'resources/js/carrinho.js'])
+    <script src="https://js.stripe.com/v3/"></script>
 </head>
 <body class="carrinho-page">
     @include('navbar')

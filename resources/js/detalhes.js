@@ -45,6 +45,14 @@ async function loadTripData() {
         
         if (!viagem) throw new Error('Viagem não encontrada');
         
+        // Buscar lugares disponíveis da API local
+        const lugaresResponse = await fetch(`/api/viagens/${tripId}/lugares-disponiveis`);
+        const lugaresData = await lugaresResponse.json();
+        
+        if (lugaresData.success) {
+            viagem.lugares_disponiveis = lugaresData.lugares_disponiveis;
+        }
+        
         return viagem;
     } catch (error) {
         console.error('Erro ao carregar viagem:', error);
@@ -92,9 +100,9 @@ function renderTripDetails(viagem) {
     container.innerHTML = `
         <div class="trip-details-grid">
             <div>
-                <h2 style="margin-bottom: 5px;">${origem} → ${destino}</h2>
+                <h2 style="margin-bottom: 5px; color: #2c3e50;">${origem} → ${destino}</h2>
                 <p style="color: #6c757d; margin-bottom: 25px;">
-                    <strong>${companhia}</strong> • ${new Date(viagem.data_partida).toLocaleDateString('pt-PT')}
+                    <strong style="color: #2c3e50;">${companhia}</strong> • ${new Date(viagem.data_partida).toLocaleDateString('pt-PT')}
                 </p>
                 
                 <div style="background: ${statusColor}15; border-left: 4px solid ${statusColor}; padding: 15px; border-radius: 0 8px 8px 0; margin-bottom: 20px;">
@@ -110,23 +118,23 @@ function renderTripDetails(viagem) {
                 </div>
                 
                 <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-                    <h4 style="margin-top: 0; margin-bottom: 15px;">Detalhes da Viagem</h4>
+                    <h4 style="margin-top: 0; margin-bottom: 15px; color: #2c3e50;">Detalhes da Viagem</h4>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                         <div>
                             <div style="font-size: 0.9em; color: #6c757d;">Partida</div>
-                            <div style="font-weight: 600;">${new Date(viagem.data_partida).toLocaleString('pt-PT')}</div>
+                            <div style="font-weight: 600; color: #2c3e50;">${new Date(viagem.data_partida).toLocaleString('pt-PT')}</div>
                         </div>
                         <div>
                             <div style="font-size: 0.9em; color: #6c757d;">Chegada</div>
-                            <div style="font-weight: 600;">${new Date(viagem.data_chegada).toLocaleString('pt-PT')}</div>
+                            <div style="font-weight: 600; color: #2c3e50;">${new Date(viagem.data_chegada).toLocaleString('pt-PT')}</div>
                         </div>
                         <div>
                             <div style="font-size: 0.9em; color: #6c757d;">Duração</div>
-                            <div style="font-weight: 600;">${duracaoHoras}h ${duracaoMinutos}min</div>
+                            <div style="font-weight: 600; color: #2c3e50;">${duracaoHoras}h ${duracaoMinutos}min</div>
                         </div>
                         <div>
                             <div style="font-size: 0.9em; color: #6c757d;">Tipo</div>
-                            <div style="font-weight: 600;">${viagem.tipo}</div>
+                            <div style="font-weight: 600; color: #2c3e50;">${viagem.tipo}</div>
                         </div>
                     </div>
                 </div>
@@ -157,17 +165,17 @@ function renderTripDetails(viagem) {
             
             <div>
                 <div style="background: white; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px;">
-                    <h4 style="margin-top: 0;">Informações da Viagem</h4>
-                    <div style="margin-bottom: 1rem;">
+                    <h4 style="margin-top: 0; color: #2c3e50;">Informações da Viagem</h4>
+                    <div style="margin-bottom: 1rem; color: #2c3e50;">
                         <strong>Origem:</strong> ${origem}
                     </div>
-                    <div style="margin-bottom: 1rem;">
+                    <div style="margin-bottom: 1rem; color: #2c3e50;">
                         <strong>Destino:</strong> ${destino}
                     </div>
-                    <div style="margin-bottom: 1rem;">
+                    <div style="margin-bottom: 1rem; color: #2c3e50;">
                         <strong>Companhia:</strong> ${companhia}
                     </div>
-                    <div style="margin-bottom: 1rem;">
+                    <div style="margin-bottom: 1rem; color: #2c3e50;">
                         <strong>Escala:</strong> ${viagem.escala ? 'Sim' : 'Não'}
                     </div>
                 </div>
