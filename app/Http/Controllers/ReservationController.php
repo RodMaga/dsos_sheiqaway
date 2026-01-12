@@ -252,10 +252,39 @@ class ReservationController extends Controller
         }
     }
 
+    public function lugaresDisponiveisBulk()
+    {
+        try {
+            $viagens = $this->getViagensFromAPI();
+            $reservas = Reservation::where('status', 'confirmado')
+                ->select('trip_id', DB::raw('count(*) as total'))
+                ->groupBy('trip_id')
+                ->pluck('total', 'trip_id');
+            
+            $resultado = [];
+            foreach ($viagens as $viagem) {
+                $tripId = $viagem['id'];
+                $capacidade = $viagem['capacidade'] ?? 50;
+                $ocupados = $reservas[$tripId] ?? 0;
+                $disponiveis = max(0, $capacidade - $ocupados);
+                
+                $resultado[$tripId] = [
+                    'lugares_disponiveis' => $disponiveis,
+                    'lugares_ocupados' => $ocupados,
+                    'capacidade_maxima' => $capacidade
+                ];
+            }
+            
+            return response()->json(['success' => true, 'data' => $resultado]);
+        } catch (\Exception $e) {
+            Log::error('Erro ao verificar lugares disponíveis em bulk: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Erro ao verificar disponibilidade.'], 500);
+        }
+    }
+
     public function lugaresDisponiveis($tripId)
     {
         try {
-            // Buscar viagem da API externa
             $viagem = $this->getViagemById($tripId);
             
             if (!$viagem) {

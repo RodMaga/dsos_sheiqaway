@@ -28,6 +28,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/api/reservas/{id}/cancelar', [ReservationController::class, 'cancel'])->name('reservas.cancel');
     Route::delete('/api/reservas/{id}', [ReservationController::class, 'destroy'])->name('reservas.destroy');
     Route::get('/api/viagens/{tripId}/lugares-disponiveis', [ReservationController::class, 'lugaresDisponiveis'])->name('viagens.lugares');
+    Route::get('/api/viagens/lugares-disponiveis/bulk', [ReservationController::class, 'lugaresDisponiveisBulk'])->name('viagens.lugares.bulk');
 });
 
 // ------------------- ROTAS PÚBLICAS -------------------

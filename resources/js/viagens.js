@@ -1,6 +1,7 @@
 // viagens.js - Lógica da página de viagens
 let allViagens = [];
 let viagemTemporaria = null;
+let lugaresDisponiveisCache = {};
 
 function decodeHTML(text) {
     if (!text) return '';
@@ -41,11 +42,24 @@ fetch('https://vs-gate.dei.isep.ipp.pt:10923/api/viagens')
         }
         allViagens = data;
         setupAutocomplete();
-        renderViagens(allViagens);
+        carregarLugaresDisponiveis().then(() => {
+            renderViagens(allViagens);
+        });
     })
     .catch(() => {
         document.getElementById('viagens-list').innerHTML = '<p style="color: #666;">Erro ao carregar viagens da API.</p>';
     });
+
+function carregarLugaresDisponiveis() {
+    return fetch('/api/viagens/lugares-disponiveis/bulk')
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                lugaresDisponiveisCache = data.data;
+            }
+        })
+        .catch(err => console.error('Erro ao carregar lugares disponíveis:', err));
+}
 
 function setupAutocomplete() {
     const origens = [...new Set(allViagens.map(v => getCityName(v.origem)))];
@@ -176,26 +190,22 @@ function renderViagens(viagens) {
         const origem = getCityName(decodeHTML(viagem.origem || ''));
         const destino = getCityName(decodeHTML(viagem.destino || ''));
         
-        fetch(`/api/viagens/${viagem.id}/lugares-disponiveis`)
-            .then(r => r.json())
-            .then(data => {
-                const card = document.querySelector(`[data-trip-id="${viagem.id}"]`);
-                if (card && data.success) {
-                    const lugaresSpan = card.querySelector('.lugares-disponiveis');
-                    const btnReservar = card.querySelector('.btn-reservar');
-                    
-                    lugaresSpan.textContent = `${data.lugares_disponiveis} disponíveis`;
-                    
-                    if (data.lugares_disponiveis === 0) {
-                        lugaresSpan.style.color = '#dc3545';
-                        btnReservar.disabled = true;
-                        btnReservar.textContent = 'Esgotado';
-                        btnReservar.style.opacity = '0.5';
-                    } else if (data.lugares_disponiveis < 5) {
-                        lugaresSpan.style.color = '#ffc107';
-                    }
-                }
-            });
+        const lugaresInfo = lugaresDisponiveisCache[viagem.id] || { lugares_disponiveis: 0 };
+        const lugaresDisponiveis = lugaresInfo.lugares_disponiveis;
+        
+        let lugaresColor = '#28a745';
+        let btnDisabled = '';
+        let btnText = 'Adicionar ao Carrinho';
+        let btnOpacity = '1';
+        
+        if (lugaresDisponiveis === 0) {
+            lugaresColor = '#dc3545';
+            btnDisabled = 'disabled';
+            btnText = 'Esgotado';
+            btnOpacity = '0.5';
+        } else if (lugaresDisponiveis < 5) {
+            lugaresColor = '#ffc107';
+        }
         
         html += `<div class="viagem-card" data-trip-id="${viagem.id}">
             <div class="card-header">
@@ -212,11 +222,11 @@ function renderViagens(viagens) {
             </div>
             <div class="info-row">
                 <span class="info-label">Lugares:</span>
-                <span class="info-value lugares-disponiveis">Carregando...</span>
+                <span class="info-value lugares-disponiveis" style="color: ${lugaresColor}">${lugaresDisponiveis} disponíveis</span>
             </div>
             <div class="price-tag">${viagem.preco} ${viagem.moeda}</div>
             <div style="display: flex; gap: 0.5rem;">
-                <button class="btn-reservar" style="flex: 1;" onclick="window.adicionarAoCarrinho(${viagem.id}, '${companhia}', '${origem}', '${destino}', ${viagem.preco}, '${viagem.moeda}')">Adicionar ao Carrinho</button>
+                <button class="btn-reservar" style="flex: 1; opacity: ${btnOpacity}" ${btnDisabled} onclick="window.adicionarAoCarrinho(${viagem.id}, '${companhia}', '${origem}', '${destino}', ${viagem.preco}, '${viagem.moeda}')">${btnText}</button>
                 <a href="/detalhes/${viagem.id}" class="btn-detalhes">Ver Detalhes</a>
             </div>
         </div>`;
@@ -225,20 +235,17 @@ function renderViagens(viagens) {
 }
 
 function adicionarAoCarrinho(tripId, companhia, origem, destino, preco, moeda) {
-    fetch(`/api/viagens/${tripId}/lugares-disponiveis`)
-        .then(r => r.json())
-        .then(data => {
-            if (!data.success || data.lugares_disponiveis === 0) {
-                alert('Não há lugares disponíveis para esta viagem.');
-                return;
-            }
-            
-            viagemTemporaria = { tripId, companhia, origem, destino, preco, moeda, lugaresDisponiveis: data.lugares_disponiveis };
-            document.getElementById('input-quantidade').value = 1;
-            document.getElementById('input-quantidade').max = data.lugares_disponiveis;
-            document.getElementById('modal-quantidade').classList.add('show');
-        })
-        .catch(() => alert('Erro ao verificar disponibilidade.'));
+    const lugaresInfo = lugaresDisponiveisCache[tripId];
+    
+    if (!lugaresInfo || lugaresInfo.lugares_disponiveis === 0) {
+        alert('Não há lugares disponíveis para esta viagem.');
+        return;
+    }
+    
+    viagemTemporaria = { tripId, companhia, origem, destino, preco, moeda, lugaresDisponiveis: lugaresInfo.lugares_disponiveis };
+    document.getElementById('input-quantidade').value = 1;
+    document.getElementById('input-quantidade').max = lugaresInfo.lugares_disponiveis;
+    document.getElementById('modal-quantidade').classList.add('show');
 }
 
 function fecharModal(modalId) {
