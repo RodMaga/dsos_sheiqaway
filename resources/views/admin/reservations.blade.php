@@ -12,7 +12,7 @@
     
     <main style="max-width: 1400px; margin: 0 auto; padding: 2rem;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-            <h1>✈️ Gestão de Reservas</h1>
+            <h1>✈ Gestão de Reservas</h1>
             <a href="/admin" class="btn-secondary">← Voltar ao Dashboard</a>
         </div>
 
@@ -47,11 +47,11 @@
                         <td><span class="badge badge-{{ $res->status }}">{{ $res->status }}</span></td>
                         <td>{{ $res->created_at->format('d/m/Y H:i') }}</td>
                         <td>
-                            <a href="{{ route('admin.reservations.edit', $res->id) }}" class="btn-action btn-warning" title="Editar">✏️</a>
+                            <a href="{{ route('admin.reservations.edit', $res->id) }}" class="btn-action btn-warning" title="Editar">✎</a>
                             <form method="POST" action="{{ route('admin.reservations.delete', $res->id) }}" style="display: inline;" onsubmit="return confirm('Eliminar esta reserva?');">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="btn-action btn-danger" title="Eliminar">🗑️</button>
+                                <button type="submit" class="btn-action btn-danger" title="Eliminar">×</button>
                             </form>
                         </td>
                     </tr>

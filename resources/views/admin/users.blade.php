@@ -12,7 +12,7 @@
     
     <main style="max-width: 1400px; margin: 0 auto; padding: 2rem;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-            <h1>👥 Gestão de Utilizadores</h1>
+            <h1>⚇ Gestão de Utilizadores</h1>
             <a href="/admin" class="btn-secondary">← Voltar ao Dashboard</a>
         </div>
 
@@ -62,14 +62,14 @@
                             <form method="POST" action="{{ route('admin.users.toggle', $user->id) }}" style="display: inline;">
                                 @csrf
                                 <button type="submit" class="btn-action btn-warning" title="Alternar Admin">
-                                    @if($user->is_admin) 👤 @else 🔧 @endif
+                                    @if($user->is_admin) ⚇ @else ⚙ @endif
                                 </button>
                             </form>
                             @if($user->id !== auth()->id())
                             <form method="POST" action="{{ route('admin.users.delete', $user->id) }}" style="display: inline;" onsubmit="return confirm('Eliminar este utilizador?');">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="btn-action btn-danger" title="Eliminar">🗑️</button>
+                                <button type="submit" class="btn-action btn-danger" title="Eliminar">×</button>
                             </form>
                             @endif
                         </td>

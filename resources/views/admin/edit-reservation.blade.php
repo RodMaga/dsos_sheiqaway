@@ -12,7 +12,7 @@
     
     <main style="max-width: 800px; margin: 0 auto; padding: 2rem;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-            <h1>✏️ Editar Reserva #{{ $reservation->booking_reference }}</h1>
+            <h1>✎ Editar Reserva #{{ $reservation->booking_reference }}</h1>
             <a href="/admin/reservations" class="btn-secondary">← Voltar</a>
         </div>
 
@@ -44,7 +44,7 @@
                 </div>
 
                 <div style="display: flex; gap: 1rem;">
-                    <button type="submit" class="btn" style="flex: 1;">💾 Guardar Alterações</button>
+                    <button type="submit" class="btn" style="flex: 1;">✓ Guardar Alterações</button>
                     <a href="/admin/reservations" class="btn-secondary" style="flex: 1; text-align: center; padding: 0.75rem;">Cancelar</a>
                 </div>
             </form>

@@ -529,7 +529,7 @@ class SearchManager {
             
             card.innerHTML = `
                 <div class="trip-header">
-                    <h4>${trip.from} ➔ ${trip.to}</h4>
+                    <h4>${trip.from} → ${trip.to}</h4>
                     <span class="badge ${ocupacaoPercent > 80 ? 'danger' : 
                                      ocupacaoPercent > 60 ? 'warning' : 'success'}">
                         ${lugaresLivres} lugar${lugaresLivres !== 1 ? 'es' : ''} livre${lugaresLivres !== 1 ? 's' : ''}
@@ -549,8 +549,8 @@ class SearchManager {
                     </div>
                     <div class="occupancy-bar">
                         <div class="occupancy-fill" style="width: ${ocupacaoPercent}%; 
-                             background: ${ocupacaoPercent > 80 ? '#dc3545' : 
-                                        ocupacaoPercent > 60 ? '#ffc107' : '#28a745'}"></div>
+                             background: ${ocupacaoPercent > 80 ? '#f43f5e' : 
+                                        ocupacaoPercent > 60 ? '#f59e0b' : '#10b981'}"></div>
                     </div>
                 </div>
                 
@@ -594,7 +594,7 @@ class SearchManager {
         
         this.resultsContainer.innerHTML = `
             <div style="text-align: center; padding: 50px 20px; animation: fadeIn 0.5s ease-out;">
-                <div style="font-size: 3em; margin-bottom: 20px; color: var(--border-color);">🔍</div>
+                <div style="font-size: 3em; margin-bottom: 20px; color: var(--border-color);">⊘</div>
                 <h3 style="color: var(--text-secondary); margin-bottom: 15px;">${message}</h3>
                 
                 ${suggestions.length > 0 ? `
@@ -661,7 +661,7 @@ class SearchManager {
                 if (window.GlobalManager?.addToCart(trip)) {
                     e.target.textContent = '✓ Adicionado';
                     e.target.disabled = true;
-                    e.target.style.background = '#28a745';
+                    e.target.style.background = '#10b981';
                     
                     // Atualizar visualização da lotação
                     const card = e.target.closest('.trip-card');

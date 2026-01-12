@@ -68,8 +68,15 @@ class AdminController extends Controller
     public function toggleAdmin($id)
     {
         $user = User::findOrFail($id);
+        $isCurrentUser = $user->id === auth()->id();
         $user->is_admin = !$user->is_admin;
         $user->save();
+        
+        if ($isCurrentUser && !$user->is_admin) {
+            auth()->logout();
+            return redirect('/login')->with('success', 'Removeu o seu cargo de admin. Faça login novamente.');
+        }
+        
         return back()->with('success', 'Permissões atualizadas!');
     }
 

@@ -26,7 +26,7 @@ header button.header-logo-button {
 }
 
 header h1 {
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -51,7 +51,7 @@ header nav a {
 }
 
 header nav a:hover {
-    color: #3b82f6;
+    color: #0ea5e9;
 }
 
 header nav form {
@@ -59,7 +59,7 @@ header nav form {
 }
 
 header nav button {
-    background: #ef4444;
+    background: #f43f5e;
     color: white;
     border: none;
     padding: 0.5rem 1.2rem;
@@ -71,7 +71,7 @@ header nav button {
 }
 
 header nav button:hover {
-    background: #dc2626;
+    background: #e11d48;
 }
 
 .theme-toggle {
@@ -172,8 +172,8 @@ main {
 .form-group input[type="date"]:focus,
 .form-group select:focus {
     outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 4px rgba(59,130,246,0.1);
+    border-color: #0ea5e9;
+    box-shadow: 0 0 0 4px rgba(14,165,233,0.1);
 }
 
 .form-group input[type="range"] {
@@ -213,12 +213,12 @@ main {
 }
 
 .suggestion-item:hover {
-    background-color: #eff6ff;
-    color: #3b82f6;
+    background-color: #f0f9ff;
+    color: #0ea5e9;
 }
 
 .search-button, .checkout-button {
-    background: #3b82f6;
+    background: #0ea5e9;
     color: white;
     border: none;
     cursor: pointer;
@@ -230,13 +230,13 @@ main {
 }
 
 .search-button:hover, .checkout-button:hover {
-    background: #2563eb;
-    box-shadow: 0 4px 10px rgba(59,130,246,0.2);
+    background: #0284c7;
+    box-shadow: 0 4px 10px rgba(14,165,233,0.2);
     transform: translateY(-2px);
 }
 
 .error-message {
-    color: #ef4444;
+    color: #f43f5e;
     font-weight: 500;
     margin-top: 15px;
     display: none;
@@ -258,12 +258,12 @@ main {
 
 #price-value {
     font-weight: 600;
-    color: #3b82f6;
+    color: #0ea5e9;
 }
 
 .loading-spinner {
     border: 6px solid #f8f9fa;
-    border-top: 6px solid #3b82f6;
+    border-top: 6px solid #0ea5e9;
     border-radius: 50%;
     width: 50px;
     height: 50px;
@@ -329,11 +329,11 @@ main {
 .trip-card .price {
     font-size: 1.4em;
     font-weight: 700;
-    color: #f59e0b;
+    color: #10b981;
 }
 
 .buy-button {
-    background: #f59e0b;
+    background: #10b981;
     color: white;
     border: none;
     padding: 10px 18px;
@@ -345,8 +345,8 @@ main {
 }
 
 .buy-button:hover {
-    background: #d97706;
-    box-shadow: 0 4px 10px rgba(245,158,11,0.2);
+    background: #059669;
+    box-shadow: 0 4px 10px rgba(16,185,129,0.2);
     transform: translateY(-2px);
 }
 
@@ -415,8 +415,8 @@ main {
 
 .auth-card .form-group input:focus {
     outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    border-color: #0ea5e9;
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
 }
 
 .auth-card .form-group input::placeholder {
@@ -451,7 +451,7 @@ main {
 }
 
 .remember-forgot a {
-    color: #3b82f6;
+    color: #0ea5e9;
     text-decoration: none;
     font-size: 0.9rem;
 }
@@ -463,7 +463,7 @@ main {
 .btn-primary {
     width: 100%;
     padding: 0.875rem;
-    background: #3b82f6;
+    background: #0ea5e9;
     color: white;
     border: none;
     border-radius: 6px;
@@ -474,7 +474,7 @@ main {
 }
 
 .btn-primary:hover {
-    background: #2563eb;
+    background: #0284c7;
 }
 
 .auth-footer {
@@ -484,7 +484,7 @@ main {
 }
 
 .auth-footer a {
-    color: #3b82f6;
+    color: #0ea5e9;
     text-decoration: none;
     font-weight: 500;
 }
@@ -572,7 +572,7 @@ body.viagens-page h1 {
 
 .viagem-card:hover {
     box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    border-color: #3b82f6;
+    border-color: #0ea5e9;
 }
 
 .card-header {
@@ -610,13 +610,13 @@ body.viagens-page h1 {
 }
 
 .price-tag {
-    background: #eff6ff;
-    border: 2px solid #3b82f6;
+    background: #f0f9ff;
+    border: 2px solid #0ea5e9;
     padding: 0.75rem;
     border-radius: 6px;
     font-size: 1.5rem;
     font-weight: 600;
-    color: #3b82f6;
+    color: #0ea5e9;
     text-align: center;
     margin: 1rem 0;
 }
@@ -624,7 +624,7 @@ body.viagens-page h1 {
 .btn-reservar {
     width: 100%;
     padding: 0.75rem;
-    background: #3b82f6;
+    background: #0ea5e9;
     color: white;
     border: none;
     border-radius: 6px;
@@ -635,7 +635,7 @@ body.viagens-page h1 {
 }
 
 .btn-reservar:hover {
-    background: #2563eb;
+    background: #0284c7;
 }
 
 .btn-detalhes {
@@ -718,7 +718,7 @@ body.viagens-page h1 {
 
 .filter-group input:focus, .filter-group select:focus {
     outline: none;
-    border-color: #3b82f6;
+    border-color: #0ea5e9;
 }
 
 .autocomplete {
@@ -751,7 +751,7 @@ body.viagens-page h1 {
 }
 
 .autocomplete-active {
-    background-color: #3b82f6 !important;
+    background-color: #0ea5e9 !important;
     color: white;
 }
 
@@ -769,7 +769,7 @@ body.viagens-page h1 {
     min-width: 80px;
     text-align: right;
     font-weight: 600;
-    color: #3b82f6;
+    color: #0ea5e9;
 }
 
 .btn-clear {
@@ -836,7 +836,7 @@ body.viagens-page h1 {
 
 .modal-content input:focus {
     outline: none;
-    border-color: #3b82f6;
+    border-color: #0ea5e9;
 }
 
 .modal-buttons {
@@ -856,12 +856,12 @@ body.viagens-page h1 {
 }
 
 .btn-modal-confirm {
-    background: #3b82f6;
+    background: #0ea5e9;
     color: white;
 }
 
 .btn-modal-confirm:hover {
-    background: #2563eb;
+    background: #0284c7;
 }
 
 .btn-modal-cancel {
@@ -964,14 +964,14 @@ body.carrinho-page h1 {
 .item-preco {
     font-size: 1.3rem;
     font-weight: 600;
-    color: #3b82f6;
+    color: #10b981;
     min-width: 100px;
     text-align: right;
 }
 
 .btn-remover {
     padding: 0.5rem 1rem;
-    background: #ef4444;
+    background: #f43f5e;
     color: white;
     border: none;
     border-radius: 6px;
@@ -980,7 +980,7 @@ body.carrinho-page h1 {
 }
 
 .btn-remover:hover {
-    background: #dc2626;
+    background: #e11d48;
 }
 
 .carrinho-resumo {
@@ -1004,13 +1004,13 @@ body.carrinho-page h1 {
     padding-top: 1rem;
     font-size: 1.5rem;
     font-weight: 700;
-    color: #3b82f6;
+    color: #10b981;
 }
 
 .btn-finalizar {
     width: 100%;
     padding: 1rem;
-    background: #3b82f6;
+    background: #10b981;
     color: white;
     border: none;
     border-radius: 6px;
@@ -1021,7 +1021,7 @@ body.carrinho-page h1 {
 }
 
 .btn-finalizar:hover {
-    background: #2563eb;
+    background: #059669;
 }
 
 .btn-continuar {
@@ -1074,7 +1074,7 @@ body.carrinho-page h1 {
 
 .passageiro-input input:focus {
     outline: none;
-    border-color: #3b82f6;
+    border-color: #0ea5e9;
 }
 
 /* === DASHBOARD PAGE === */
@@ -1179,14 +1179,14 @@ body.dashboard-page h1 {
 .reserva-price {
     font-size: 1.2rem;
     font-weight: 600;
-    color: #3b82f6;
+    color: #10b981;
     margin-top: 0.5rem;
 }
 
 .btn {
     display: inline-block;
     padding: 0.75rem 1.5rem;
-    background: #3b82f6;
+    background: #0ea5e9;
     color: white;
     text-decoration: none;
     border-radius: 6px;
@@ -1195,7 +1195,7 @@ body.dashboard-page h1 {
 }
 
 .btn:hover {
-    background: #2563eb;
+    background: #0284c7;
 }
 
 .btn-secondary {
@@ -1302,7 +1302,7 @@ body.dark-mode.detalhes-page .content-card {
     background: linear-gradient(135deg, #f8f9fa, #e9ecef);
     padding: 25px;
     border-radius: 12px;
-    border: 2px solid #3b82f6;
+    border: 2px solid #0ea5e9;
     margin: 20px 0;
 }
 
@@ -1352,7 +1352,7 @@ body.admin-page h2 { font-size: 1.5rem; font-weight: 600; color: #2c3e50; margin
 
 .stat-card:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
 .stat-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
-.stat-value { font-size: 2rem; font-weight: 700; color: #3b82f6; margin-bottom: 0.25rem; }
+.stat-value { font-size: 2rem; font-weight: 700; color: #0ea5e9; margin-bottom: 0.25rem; }
 .stat-label { font-size: 0.9rem; color: #6c757d; font-weight: 500; }
 
 .admin-table {
@@ -1509,7 +1509,7 @@ body.dark-mode header nav a {
 }
 
 body.dark-mode header nav a:hover {
-    color: #60a5fa;
+    color: #38bdf8;
 }
 
 body.dark-mode .content-card,
@@ -1537,14 +1537,14 @@ body.dark-mode strong {
 }
 
 body.dark-mode .price-tag {
-    background: #1a3a52;
-    border-color: #60a5fa;
-    color: #60a5fa;
+    background: #164e63;
+    border-color: #06b6d4;
+    color: #06b6d4;
 }
 
 body.dark-mode .item-preco,
 body.dark-mode .reserva-price {
-    color: #60a5fa;
+    color: #34d399;
 }
 
 body.dark-mode .btn-reservar,
@@ -1553,7 +1553,7 @@ body.dark-mode .checkout-button,
 body.dark-mode .btn-primary,
 body.dark-mode .btn-finalizar,
 body.dark-mode .btn-modal-confirm {
-    background: #60a5fa;
+    background: #06b6d4;
     color: #1a1a1a;
 }
 
@@ -1563,7 +1563,7 @@ body.dark-mode .checkout-button:hover,
 body.dark-mode .btn-primary:hover,
 body.dark-mode .btn-finalizar:hover,
 body.dark-mode .btn-modal-confirm:hover {
-    background: #3b82f6;
+    background: #0891b2;
 }
 
 body.dark-mode .btn-detalhes,
@@ -1642,7 +1642,7 @@ body.dark-mode .autocomplete-items div:hover {
 }
 
 body.dark-mode .trip-card .price {
-    color: #fbbf24;
+    color: #34d399;
 }
 
 body.dark-mode .item-info h3,
@@ -1670,6 +1670,6 @@ body.dark-mode .carrinho-resumo {
 }
 
 body.dark-mode .price-highlight {
-    background: #1a3a52;
-    border-color: #60a5fa;
+    background: #164e63;
+    border-color: #06b6d4;
 }

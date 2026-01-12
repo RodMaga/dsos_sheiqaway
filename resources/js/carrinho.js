@@ -49,8 +49,8 @@ function carregarCarrinho() {
                 <span>Total:</span>
                 <span>${total.toFixed(2)} ${carrinho[0].moeda}</span>
             </div>
-            <div class="resumo-linha" style="color: #16a34a; font-weight: 600; border-top: 1px solid #e0e0e0; margin-top: 0.5rem; padding-top: 0.5rem;">
-                <span>🎁 Pontos a receber:</span>
+            <div class="resumo-linha" style="color: #10b981; font-weight: 600; border-top: 1px solid #e0e0e0; margin-top: 0.5rem; padding-top: 0.5rem;">
+                <span>★ Pontos a receber:</span>
                 <span>${pontosReceber} pontos</span>
             </div>
         </div>
@@ -107,7 +107,6 @@ const stripe = Stripe('pk_test_51SooNOIQBLR7czrRnsWeak4sfG9oz0M3PrxMBDmRqp7XvPiy
 function finalizarCompra() {
     const carrinho = JSON.parse(localStorage.getItem('carrinho') || '[]');
     
-    // Desabilitar botão para evitar cliques múltiplos
     const btnFinalizar = document.querySelector('.btn-finalizar');
     if (btnFinalizar.disabled) return;
     btnFinalizar.disabled = true;
@@ -126,19 +125,19 @@ function finalizarCompra() {
             
             if (!nome) {
                 todosPreenchidos = false;
-                input.style.borderColor = '#dc2626';
+                input.style.borderColor = '#f43f5e';
                 erros.push('Preencha todos os nomes');
             } else if (nome.length < 3) {
                 todosPreenchidos = false;
-                input.style.borderColor = '#dc2626';
+                input.style.borderColor = '#f43f5e';
                 erros.push('Nome deve ter pelo menos 3 caracteres');
             } else if (!/^[a-zA-ZÀ-ſ\s]+$/.test(nome)) {
                 todosPreenchidos = false;
-                input.style.borderColor = '#dc2626';
+                input.style.borderColor = '#f43f5e';
                 erros.push('Nome deve conter apenas letras');
             } else if (nomes.includes(nome.toLowerCase())) {
                 todosPreenchidos = false;
-                input.style.borderColor = '#dc2626';
+                input.style.borderColor = '#f43f5e';
                 erros.push(`Nome "${nome}" já foi usado`);
             } else {
                 input.style.borderColor = '#e0e0e0';
@@ -159,14 +158,13 @@ function finalizarCompra() {
         btnFinalizar.style.opacity = '1';
         
         const msg = document.createElement('div');
-        msg.style.cssText = 'position:fixed;top:20px;right:20px;background:#dc2626;color:white;padding:1rem 1.5rem;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.2);z-index:9999;max-width:400px;';
+        msg.style.cssText = 'position:fixed;top:20px;right:20px;background:#f43f5e;color:white;padding:1rem 1.5rem;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.2);z-index:9999;max-width:400px;';
         msg.innerHTML = '<strong>Erros encontrados:</strong><br>' + [...new Set(erros)].join('<br>');
         document.body.appendChild(msg);
         setTimeout(() => msg.remove(), 4000);
         return;
     }
     
-    // Criar sessão de checkout do Stripe
     fetch('/payment/create-checkout-session', {
         method: 'POST',
         headers: {
@@ -178,7 +176,6 @@ function finalizarCompra() {
     .then(res => res.json())
     .then(data => {
         if (data.id) {
-            // Redirecionar para Stripe Checkout
             return stripe.redirectToCheckout({ sessionId: data.id });
         } else {
             throw new Error(data.error || 'Erro ao criar sessão de pagamento');
@@ -191,14 +188,13 @@ function finalizarCompra() {
         btnFinalizar.style.opacity = '1';
         
         const msg = document.createElement('div');
-        msg.style.cssText = 'position:fixed;top:20px;right:20px;background:#dc2626;color:white;padding:1rem 1.5rem;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.2);z-index:9999;';
+        msg.style.cssText = 'position:fixed;top:20px;right:20px;background:#f43f5e;color:white;padding:1rem 1.5rem;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.2);z-index:9999;';
         msg.textContent = 'Erro: ' + error.message;
         document.body.appendChild(msg);
         setTimeout(() => msg.remove(), 3000);
     });
 }
 
-// Função antiga (backup sem Stripe)
 function finalizarCompraSemStripe() {
     const carrinho = JSON.parse(localStorage.getItem('carrinho') || '[]');
     
@@ -220,19 +216,19 @@ function finalizarCompraSemStripe() {
             
             if (!nome) {
                 todosPreenchidos = false;
-                input.style.borderColor = '#dc2626';
+                input.style.borderColor = '#f43f5e';
                 erros.push('Preencha todos os nomes');
             } else if (nome.length < 3) {
                 todosPreenchidos = false;
-                input.style.borderColor = '#dc2626';
+                input.style.borderColor = '#f43f5e';
                 erros.push('Nome deve ter pelo menos 3 caracteres');
             } else if (!/^[a-zA-ZÀ-ÿ\s]+$/.test(nome)) {
                 todosPreenchidos = false;
-                input.style.borderColor = '#dc2626';
+                input.style.borderColor = '#f43f5e';
                 erros.push('Nome deve conter apenas letras');
             } else if (nomes.includes(nome.toLowerCase())) {
                 todosPreenchidos = false;
-                input.style.borderColor = '#dc2626';
+                input.style.borderColor = '#f43f5e';
                 erros.push(`Nome "${nome}" já foi usado`);
             } else {
                 input.style.borderColor = '#e0e0e0';
@@ -253,7 +249,7 @@ function finalizarCompraSemStripe() {
         btnFinalizar.style.opacity = '1';
         
         const msg = document.createElement('div');
-        msg.style.cssText = 'position:fixed;top:20px;right:20px;background:#dc2626;color:white;padding:1rem 1.5rem;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.2);z-index:9999;max-width:400px;';
+        msg.style.cssText = 'position:fixed;top:20px;right:20px;background:#f43f5e;color:white;padding:1rem 1.5rem;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.2);z-index:9999;max-width:400px;';
         msg.innerHTML = '<strong>Erros encontrados:</strong><br>' + [...new Set(erros)].join('<br>');
         document.body.appendChild(msg);
         setTimeout(() => msg.remove(), 4000);
@@ -286,8 +282,8 @@ function finalizarCompraSemStripe() {
     .then(resp => {
         if (resp && resp.success) {
             const msg = document.createElement('div');
-            msg.style.cssText = 'position:fixed;top:20px;right:20px;background:#16a34a;color:white;padding:1rem 1.5rem;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.2);z-index:9999;';
-            msg.innerHTML = `Reservas criadas com sucesso!<br>🎁 Ganhou ${resp.pontos_ganhos} pontos!`;
+            msg.style.cssText = 'position:fixed;top:20px;right:20px;background:#10b981;color:white;padding:1rem 1.5rem;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.2);z-index:9999;';
+            msg.innerHTML = `Reservas criadas com sucesso!<br>★ Ganhou ${resp.pontos_ganhos} pontos!`;
             document.body.appendChild(msg);
             
             localStorage.removeItem('carrinho');
@@ -304,7 +300,7 @@ function finalizarCompraSemStripe() {
         
         if (!error.message.includes('login')) {
             const msg = document.createElement('div');
-            msg.style.cssText = 'position:fixed;top:20px;right:20px;background:#dc2626;color:white;padding:1rem 1.5rem;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.2);z-index:9999;';
+            msg.style.cssText = 'position:fixed;top:20px;right:20px;background:#f43f5e;color:white;padding:1rem 1.5rem;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.2);z-index:9999;';
             msg.textContent = 'Erro ao finalizar compra: ' + error.message;
             document.body.appendChild(msg);
             setTimeout(() => msg.remove(), 3000);

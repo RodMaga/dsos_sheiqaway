@@ -14,31 +14,31 @@
     
     <main style="max-width: 1400px; margin: 0 auto; padding: 2rem;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-            <h1>🔧 Backoffice</h1>
+            <h1>⚙ Backoffice</h1>
             <div style="display: flex; gap: 1rem;">
-                <a href="/admin/users" class="btn-secondary">Utilizadores</a>
-                <a href="/admin/reservations" class="btn-secondary">Reservas</a>
+                <a href="/admin/users" class="btn" style="background: #0ea5e9; color: white; text-decoration: none; padding: 0.75rem 1.5rem; border-radius: 6px; font-weight: 500;">⚇ Utilizadores</a>
+                <a href="/admin/reservations" class="btn" style="background: #10b981; color: white; text-decoration: none; padding: 0.75rem 1.5rem; border-radius: 6px; font-weight: 500;">✈ Reservas</a>
             </div>
         </div>
 
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
             <div class="stat-card">
-                <div class="stat-icon">👥</div>
+                <div class="stat-icon">⚇</div>
                 <div class="stat-value">{{ $stats['total_users'] }}</div>
                 <div class="stat-label">Total Utilizadores</div>
             </div>
             <div class="stat-card">
-                <div class="stat-icon">✈️</div>
+                <div class="stat-icon">✈</div>
                 <div class="stat-value">{{ $stats['total_reservations'] }}</div>
                 <div class="stat-label">Total Reservas</div>
             </div>
             <div class="stat-card">
-                <div class="stat-icon">💰</div>
+                <div class="stat-icon">€</div>
                 <div class="stat-value">€{{ number_format($stats['total_revenue'], 2) }}</div>
                 <div class="stat-label">Receita Total</div>
             </div>
             <div class="stat-card">
-                <div class="stat-icon">✅</div>
+                <div class="stat-icon">✓</div>
                 <div class="stat-value">{{ $stats['active_reservations'] }}</div>
                 <div class="stat-label">Reservas Ativas</div>
             </div>
@@ -46,7 +46,7 @@
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
             <div class="card">
-                <h2>🏆 Top 10 Clientes</h2>
+                <h2>★ Top 10 Clientes</h2>
                 <table class="admin-table">
                     <thead>
                         <tr>
@@ -68,7 +68,7 @@
             </div>
 
             <div class="card">
-                <h2>🌍 Top 10 Destinos</h2>
+                <h2>◉ Top 10 Destinos</h2>
                 <table class="admin-table">
                     <thead>
                         <tr>
@@ -89,7 +89,7 @@
         </div>
 
         <div class="card">
-            <h2>📋 Últimas Reservas</h2>
+            <h2>▤ Últimas Reservas</h2>
             <table class="admin-table">
                 <thead>
                     <tr>
@@ -117,7 +117,7 @@
                             <form method="POST" action="{{ route('admin.reservations.delete', $res->id) }}" style="display: inline;" onsubmit="return confirm('Eliminar esta reserva?');">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="btn-action btn-danger">🗑️</button>
+                                <button type="submit" class="btn-action btn-danger">×</button>
                             </form>
                         </td>
                     </tr>
