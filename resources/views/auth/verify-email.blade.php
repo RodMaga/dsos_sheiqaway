@@ -9,6 +9,16 @@
         </div>
     @endif
 
+    @if(config('app.env') === 'local')
+        <div class="mb-4 p-4 bg-yellow-100 border border-yellow-400 rounded">
+            <strong>Modo Desenvolvimento:</strong>
+            <p class="mt-2">Para testar sem email real, clique no botão abaixo:</p>
+            <a href="{{ route('dev.verify') }}" class="inline-block mt-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+                ✅ Verificar Email (DEV)
+            </a>
+        </div>
+    @endif
+
     <div class="mt-4 flex items-center justify-between">
         <form method="POST" action="{{ route('verification.send') }}">
             @csrf

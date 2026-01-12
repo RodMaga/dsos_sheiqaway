@@ -13,6 +13,9 @@ export default defineConfig({
                 'resources/js/script.js',
                 'resources/js/global.js',
                 'resources/js/cart.js',
+                'resources/js/carrinho.js',
+                'resources/js/dashboard.js',
+                'resources/js/detalhes.js',
                 'resources/js/viagens.js'
             ],
             refresh: true,

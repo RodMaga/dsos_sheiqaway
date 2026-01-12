@@ -37,9 +37,15 @@ Route::middleware('auth')->group(function () {
     Route::get('/payment/success', [PaymentController::class, 'success'])->name('payment.success');
 });
 
+// ------------------- DESENVOLVIMENTO - VERIFICAÇÃO MANUAL -------------------
+use App\Http\Controllers\Auth\DevEmailVerificationController;
+Route::middleware('auth')->group(function () {
+    Route::get('/dev/verify-email', [DevEmailVerificationController::class, 'verify'])->name('dev.verify');
+});
+
 // ------------------- RESERVAS -------------------
 use App\Http\Controllers\ReservationController;
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'verified', 'validate.reservation'])->group(function () {
     Route::get('/api/reservas', [ReservationController::class, 'index'])->name('reservas.index');
     Route::get('/api/reservas/{id}', [ReservationController::class, 'show'])->name('reservas.show');
     Route::post('/reservar', [ReservationController::class, 'store'])->name('reservar.store');
@@ -49,6 +55,9 @@ Route::middleware('auth')->group(function () {
     Route::delete('/api/reservas/{id}', [ReservationController::class, 'destroy'])->name('reservas.destroy');
     Route::get('/api/viagens/{tripId}/lugares-disponiveis', [ReservationController::class, 'lugaresDisponiveis'])->name('viagens.lugares');
     Route::get('/api/viagens/lugares-disponiveis/bulk', [ReservationController::class, 'lugaresDisponiveisBulk'])->name('viagens.lugares.bulk');
+    Route::get('/api/user-points', function () {
+        return response()->json(['points' => Auth::user()->points ?? 0]);
+    });
 });
 
 // ------------------- ROTAS PÚBLICAS -------------------
@@ -79,7 +88,8 @@ Route::middleware('auth')->group(function () {
 });
 
 // ------------------- ROTAS PROTEGIDAS (APÓS LOGIN) -------------------
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'verified'])->group(function () {
+    
     // Páginas do Utilizador
     Route::get('/viagens', function () { return view('viagens'); })->name('viagens');
     Route::get('/dashboard', function () { return view('dashboard'); })->name('dashboard');
