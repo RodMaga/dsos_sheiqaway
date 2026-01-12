@@ -2,146 +2,215 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use App\Models\User;
 use App\Models\Reservation;
 use App\Models\Payment;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class AdminController extends Controller
 {
     public function index()
     {
+        if (!Auth::check() || !Auth::user()->is_admin) {
+            return redirect()->route('dashboard')->with('error', 'Acesso negado.');
+        }
+
         $stats = [
             'total_users' => User::count(),
             'total_reservations' => Reservation::count(),
             'total_revenue' => Payment::where('status', 'completed')->sum('amount'),
-            'active_reservations' => Reservation::where('status', 'confirmado')->count(),
+            'active_reservations' => Reservation::whereIn('status', ['confirmed', 'pending'])->count()
         ];
 
-        $topClients = User::select('users.*', DB::raw('COUNT(reservas.id) as total_reservations'))
-            ->join('reservas', 'users.id', '=', 'reservas.user_id')
-            ->groupBy('users.id', 'users.name', 'users.email', 'users.email_verified_at', 'users.password', 'users.remember_token', 'users.created_at', 'users.updated_at', 'users.is_admin', 'users.phone', 'users.points')
-            ->orderBy('total_reservations', 'desc')
+        // Top 10 clients by reservation count
+        $topClients = User::withCount('reservations')
+            ->orderBy('reservations_count', 'desc')
             ->limit(10)
-            ->get();
+            ->get()
+            ->map(function($user) {
+                $user->total_reservations = $user->reservations_count;
+                return $user;
+            });
 
-        $viagens = collect(\Cache::remember('viagens_api', 300, function () {
-            try {
-                $response = \Http::withoutVerifying()->timeout(10)->get("https://vs-gate.dei.isep.ipp.pt:10923/api/viagens");
-                return $response->json() ?? [];
-            } catch (\Exception $e) {
-                return [];
-            }
-        }));
-
+        // Top 10 destinations
         $topDestinations = Reservation::select('trip_id', DB::raw('COUNT(*) as total'))
-            ->where('status', 'confirmado')
             ->groupBy('trip_id')
             ->orderBy('total', 'desc')
             ->limit(10)
             ->get()
-            ->map(function($item) use ($viagens) {
-                $viagem = $viagens->firstWhere('id', $item->trip_id);
-                $item->destino = $viagem['destino'] ?? 'N/A';
-                $item->origem = $viagem['origem'] ?? 'N/A';
+            ->map(function($item) {
+                // Add placeholder origin/destination - you may want to fetch from API
+                $item->origem = 'N/A';
+                $item->destino = 'N/A';
                 return $item;
             });
 
-        $topCompanies = Reservation::select('trip_id', DB::raw('COUNT(*) as total'))
-            ->where('status', 'confirmado')
-            ->groupBy('trip_id')
-            ->get()
-            ->map(function($item) use ($viagens) {
-                $viagem = $viagens->firstWhere('id', $item->trip_id);
-                $item->companhia = $viagem['companhia'] ?? 'N/A';
-                return $item;
-            })
-            ->groupBy('companhia')
-            ->map(function($group) {
-                return $group->sum('total');
-            })
-            ->sortDesc()
-            ->take(5);
+        // Top 5 companies - placeholder data
+        $topCompanies = [
+            'TAP Air Portugal' => 0,
+            'Ryanair' => 0,
+            'Air France' => 0,
+            'Lufthansa' => 0,
+            'British Airways' => 0
+        ];
 
+        // Monthly revenue
         $monthlyRevenue = Payment::where('status', 'completed')
-            ->select(DB::raw('DATE_FORMAT(created_at, "%Y-%m") as month'), DB::raw('SUM(amount) as revenue'))
+            ->selectRaw('DATE_FORMAT(created_at, "%Y-%m") as month, SUM(amount) as revenue')
             ->groupBy('month')
             ->orderBy('month', 'desc')
-            ->limit(6)
+            ->limit(12)
             ->get();
 
+        // Recent reservations
         $recentReservations = Reservation::with('user')
             ->orderBy('created_at', 'desc')
-            ->limit(10)
+            ->limit(20)
             ->get();
 
-        return view('admin.dashboard', compact('stats', 'topClients', 'topDestinations', 'topCompanies', 'monthlyRevenue', 'recentReservations'));
+        return view('admin.dashboard', compact(
+            'stats',
+            'topClients',
+            'topDestinations',
+            'topCompanies',
+            'monthlyRevenue',
+            'recentReservations'
+        ));
     }
 
     public function users()
     {
-        $users = User::withCount(['reservations as reservations_count'])->orderBy('created_at', 'desc')->paginate(20);
+        if (!Auth::check() || !Auth::user()->is_admin) {
+            return redirect()->route('dashboard')->with('error', 'Acesso negado.');
+        }
+
+        $users = User::all();
         return view('admin.users', compact('users'));
     }
 
     public function reservations()
     {
-        $reservations = Reservation::with('user')->orderBy('created_at', 'desc')->paginate(20);
+        if (!Auth::check() || !Auth::user()->is_admin) {
+            return redirect()->route('dashboard')->with('error', 'Acesso negado.');
+        }
+
+        $reservations = Reservation::with('user')->get();
         return view('admin.reservations', compact('reservations'));
     }
 
     public function toggleAdmin($id)
     {
+        if (!Auth::check() || !Auth::user()->is_admin) {
+            return response()->json(['success' => false, 'message' => 'Acesso negado.'], 403);
+        }
+
         $user = User::findOrFail($id);
-        $isCurrentUser = $user->id === auth()->id();
         $user->is_admin = !$user->is_admin;
         $user->save();
-        
-        if ($isCurrentUser && !$user->is_admin) {
-            auth()->logout();
-            return redirect('/login')->with('success', 'Removeu o seu cargo de admin. Faça login novamente.');
-        }
-        
-        return back()->with('success', 'Permissões atualizadas!');
+
+        return response()->json(['success' => true, 'is_admin' => $user->is_admin]);
     }
 
     public function deleteUser($id)
     {
-        $user = User::findOrFail($id);
-        if ($user->id === auth()->id()) {
-            return back()->with('error', 'Não pode eliminar a sua própria conta!');
+        if (!Auth::check() || !Auth::user()->is_admin) {
+            return response()->json(['success' => false, 'message' => 'Acesso negado.'], 403);
         }
-        $user->delete();
-        return back()->with('success', 'Utilizador eliminado!');
-    }
 
-    public function deleteReservation($id)
-    {
-        $reservation = Reservation::findOrFail($id);
-        $reservation->delete();
-        return back()->with('success', 'Reserva eliminada!');
+        $user = User::findOrFail($id);
+        $user->delete();
+
+        return response()->json(['success' => true]);
     }
 
     public function editReservation($id)
     {
+        if (!Auth::check() || !Auth::user()->is_admin) {
+            return redirect()->route('dashboard')->with('error', 'Acesso negado.');
+        }
+
         $reservation = Reservation::with('user')->findOrFail($id);
-        return view('admin.edit-reservation', compact('reservation'));
+        return view('admin.reservations.edit', compact('reservation'));
     }
 
     public function updateReservation(Request $request, $id)
     {
+        if (!Auth::check() || !Auth::user()->is_admin) {
+            return response()->json(['success' => false, 'message' => 'Acesso negado.'], 403);
+        }
+
         $reservation = Reservation::findOrFail($id);
-        
-        $request->validate([
-            'passenger_name' => 'required|string|max:255',
-            'status' => 'required|in:confirmado,cancelado',
-        ]);
+        $reservation->update($request->all());
 
-        $reservation->passenger_name = $request->passenger_name;
-        $reservation->status = $request->status;
-        $reservation->save();
+        return response()->json(['success' => true]);
+    }
 
-        return redirect()->route('admin.reservations')->with('success', 'Reserva atualizada!');
+    public function deleteReservation($id)
+    {
+        if (!Auth::check() || !Auth::user()->is_admin) {
+            return response()->json(['success' => false, 'message' => 'Acesso negado.'], 403);
+        }
+
+        $reservation = Reservation::findOrFail($id);
+        $reservation->delete();
+
+        return response()->json(['success' => true]);
+    }
+
+    public function storeCampaign(Request $request)
+    {
+        if (!Auth::check() || !Auth::user()->is_admin) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Acesso negado.'
+            ], 403);
+        }
+
+        try {
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'description' => 'nullable|string',
+                'discount_type' => 'required|in:percentage,fixed',
+                'discount_value' => 'required|numeric|min:0',
+                'start_date' => 'required|date',
+                'end_date' => 'required|date|after_or_equal:start_date',
+                'priority' => 'required|integer|min:1',
+                'attribute' => 'required|string',
+                'operator' => 'required|string',
+                'value' => 'required|string'
+            ]);
+
+            // Call stored procedure to insert campaign
+            DB::statement('CALL insert_campaign_with_condition(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
+                $validated['name'],
+                $validated['description'],
+                $validated['discount_type'],
+                $validated['discount_value'],
+                $validated['start_date'],
+                $validated['end_date'],
+                $validated['priority'],
+                $validated['attribute'],
+                $validated['operator'],
+                $validated['value']
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Campanha criada com sucesso!'
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Dados inválidos.',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao criar campanha: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

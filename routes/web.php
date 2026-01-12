@@ -20,6 +20,8 @@ use App\Http\Controllers\Auth\VerifyEmailController;
 // ------------------- ADMIN BACKOFFICE -------------------
 Route::middleware(['auth', \App\Http\Middleware\IsAdmin::class])->prefix('admin')->group(function () {
     Route::get('/', [AdminController::class, 'index'])->name('admin.dashboard');
+    Route::get('/dashboard', [AdminController::class, 'index'])->name('admin.dashboard.view');
+    Route::post('/campaigns/store', [AdminController::class, 'storeCampaign'])->name('admin.campaigns.store');
     Route::get('/users', [AdminController::class, 'users'])->name('admin.users');
     Route::get('/reservations', [AdminController::class, 'reservations'])->name('admin.reservations');
     Route::post('/users/{id}/toggle-admin', [AdminController::class, 'toggleAdmin'])->name('admin.users.toggle');
@@ -36,7 +38,7 @@ Route::middleware('auth')->group(function () {
 });
 
 // ------------------- RESERVAS (API) -------------------
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/api/reservas', [ReservationController::class, 'index'])->name('reservas.index');
     Route::get('/api/reservas/{id}', [ReservationController::class, 'show'])->name('reservas.show');
     Route::post('/reservar', [ReservationController::class, 'store'])->name('reservar.store');
@@ -46,6 +48,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/api/reservas/{id}', [ReservationController::class, 'destroy'])->name('reservas.destroy');
     Route::get('/api/viagens/{tripId}/lugares-disponiveis', [ReservationController::class, 'lugaresDisponiveis'])->name('viagens.lugares');
     Route::get('/api/viagens/lugares-disponiveis/bulk', [ReservationController::class, 'lugaresDisponiveisBulk'])->name('viagens.lugares.bulk');
+    Route::post('/api/apply-campaign', [ReservationController::class, 'applyCampaign'])->name('apply.campaign');
     Route::get('/api/user-points', function () {
         return response()->json(['points' => auth()->user()->points ?? 0]);
     });
@@ -72,6 +75,14 @@ Route::middleware('auth')->group(function () {
     Route::get('verify-email', EmailVerificationPromptController::class)->name('verification.notice');
     Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)->middleware(['signed', 'throttle:6,1'])->name('verification.verify');
     Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])->middleware('throttle:6,1')->name('verification.send');
+    
+    // DEV: Verificação rápida sem email
+    if (config('app.env') === 'local') {
+        Route::get('dev/verify-email', function () {
+            auth()->user()->markEmailAsVerified();
+            return redirect()->route('dashboard')->with('status', 'Email verificado com sucesso!');
+        })->name('dev.verify');
+    }
     Route::get('confirm-password', [ConfirmablePasswordController::class, 'show'])->name('password.confirm');
     Route::post('confirm-password', [ConfirmablePasswordController::class, 'store']);
     Route::put('password', [PasswordController::class, 'update'])->name('password.update');
