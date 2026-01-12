@@ -88,6 +88,48 @@
             </div>
         </div>
 
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+            <div class="card">
+                <h2>✈ Top 5 Companhias</h2>
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Companhia</th>
+                            <th>Total Reservas</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($topCompanies as $company => $total)
+                        <tr>
+                            <td>{{ $company }}</td>
+                            <td><strong>{{ $total }}</strong></td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="card">
+                <h2>€ Receita Mensal</h2>
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Mês</th>
+                            <th>Receita</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($monthlyRevenue as $rev)
+                        <tr>
+                            <td>{{ $rev->month }}</td>
+                            <td><strong>€{{ number_format($rev->revenue, 2) }}</strong></td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
         <div class="card">
             <h2>▤ Últimas Reservas</h2>
             <table class="admin-table">

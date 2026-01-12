@@ -42,6 +42,7 @@ fetch('https://vs-gate.dei.isep.ipp.pt:10923/api/viagens')
         }
         allViagens = data;
         setupAutocomplete();
+        setupCompanhiaFilter();
         carregarLugaresDisponiveis().then(() => {
             renderViagens(allViagens);
         });
@@ -67,6 +68,21 @@ function setupAutocomplete() {
     
     autocomplete(document.getElementById('filter-origem'), origens);
     autocomplete(document.getElementById('filter-destino'), destinos);
+}
+
+function setupCompanhiaFilter() {
+    const companhias = [...new Set(allViagens.map(v => v.companhia))].sort();
+    const select = document.getElementById('filter-companhia');
+    
+    companhias.forEach(comp => {
+        const option = document.createElement('option');
+        option.value = comp;
+        option.textContent = getAirlineName(comp);
+        select.appendChild(option);
+    });
+    
+    select.addEventListener('change', applyFilters);
+    document.getElementById('filter-tipo').addEventListener('change', applyFilters);
 }
 
 function autocomplete(inp, arr) {
@@ -148,6 +164,8 @@ function autocomplete(inp, arr) {
 function applyFilters() {
     const origemFilter = document.getElementById('filter-origem').value.toLowerCase();
     const destinoFilter = document.getElementById('filter-destino').value.toLowerCase();
+    const companhiaFilter = document.getElementById('filter-companhia').value;
+    const tipoFilter = document.getElementById('filter-tipo').value;
     const dataFilter = document.getElementById('filter-data').value;
     const precoFilter = parseFloat(document.getElementById('filter-preco').value);
     
@@ -157,6 +175,11 @@ function applyFilters() {
         
         if (origemFilter && !origemNome.includes(origemFilter)) return false;
         if (destinoFilter && !destinoNome.includes(destinoFilter)) return false;
+        if (companhiaFilter && viagem.companhia !== companhiaFilter) return false;
+        
+        if (tipoFilter === 'direta' && viagem.escala) return false;
+        if (tipoFilter === 'escala' && !viagem.escala) return false;
+        
         if (dataFilter) {
             const viagemDate = new Date(viagem.data_partida).toISOString().split('T')[0];
             if (viagemDate !== dataFilter) return false;
@@ -171,6 +194,8 @@ function applyFilters() {
 function clearFilters() {
     document.getElementById('filter-origem').value = '';
     document.getElementById('filter-destino').value = '';
+    document.getElementById('filter-companhia').value = '';
+    document.getElementById('filter-tipo').value = 'all';
     document.getElementById('filter-data').value = '';
     document.getElementById('filter-preco').value = 1000;
     document.getElementById('price-display').textContent = '1000€';
@@ -210,7 +235,7 @@ function renderViagens(viagens) {
         html += `<div class="viagem-card" data-trip-id="${viagem.id}">
             <div class="card-header">
                 <h3>${companhia}</h3>
-                <div class="route">${origem} → ${destino}</div>
+                <div class="route">${origem} → ${destino}${viagem.escala ? ' (Com Escala)' : ''}</div>
             </div>
             <div class="info-row">
                 <span class="info-label">Partida:</span>

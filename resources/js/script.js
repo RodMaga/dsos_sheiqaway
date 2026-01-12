@@ -24,12 +24,11 @@ class SearchManager {
 
     async loadData() {
         try {
-            // Obter o token guardado no login
             const token = localStorage.getItem('auth_token');
 
             const headers = {
                 'Accept': 'application/json',
-                'Authorization': `Bearer ${token}` // Envia o token para a API
+                'Authorization': `Bearer ${token}`
             };
 
             const tripsResponse = await fetch('/api/trips', { headers });
@@ -39,12 +38,18 @@ class SearchManager {
             const providersResponse = await fetch('/api/providers', { headers });
             if (providersResponse.ok) {
                 this.allProviders = await providersResponse.json();
-                // ... resto da lógica de mapeamento
+                this.providerMap = {};
+                this.allProviders.forEach(provider => {
+                    this.providerMap[provider.id] = provider.name;
+                });
             }
+
+            this.allLocations = [...new Set([
+                ...this.allTrips.map(t => t.from),
+                ...this.allTrips.map(t => t.to)
+            ])].sort();
         } catch (error) {
             console.error('Erro de autenticação:', error);
-            // Opcional: redirecionar para login se o token falhar
-            // window.location.href = '/login';
         }
     }
 

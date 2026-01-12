@@ -692,7 +692,7 @@ body.viagens-page h1 {
 
 .filter-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 1.5rem;
     align-items: end;
 }
@@ -1332,7 +1332,7 @@ body.dark-mode.detalhes-page .content-card {
     #viagens-list { grid-template-columns: 1fr; }
     body.viagens-page main, body.carrinho-page main, body.dashboard-page main { padding: 2rem 1rem; }
     body.viagens-page h1, body.carrinho-page h1 { font-size: 2rem; }
-    .filter-grid { grid-template-columns: 1fr; }
+    .filters > div[style*="grid-template-columns"] { grid-template-columns: 1fr !important; }
     .dashboard-grid { grid-template-columns: 1fr; }
 }
 

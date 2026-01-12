@@ -26,10 +26,14 @@ class AdminController extends Controller
             ->limit(10)
             ->get();
 
-        // Buscar viagens da API para obter nomes dos destinos
         $viagens = \Cache::remember('viagens_api', 300, function () {
-            $response = \Http::withoutVerifying()->timeout(10)->get("https://vs-gate.dei.isep.ipp.pt:10923/api/viagens");
-            return collect($response->json())->keyBy('id');
+            try {
+                $response = \Http::withoutVerifying()->timeout(10)->get("https://vs-gate.dei.isep.ipp.pt:10923/api/viagens");
+                $data = $response->json();
+                return is_array($data) ? collect($data) : collect([]);
+            } catch (\Exception $e) {
+                return collect([]);
+            }
         });
 
         $topDestinations = Reservation::select('trip_id', DB::raw('COUNT(*) as total'))
@@ -39,18 +43,41 @@ class AdminController extends Controller
             ->limit(10)
             ->get()
             ->map(function($item) use ($viagens) {
-                $viagem = $viagens->get($item->trip_id);
-                $item->destino = $viagem ? $viagem['destino'] : 'N/A';
-                $item->origem = $viagem ? $viagem['origem'] : 'N/A';
+                $viagem = $viagens->firstWhere('id', $item->trip_id);
+                $item->destino = $viagem['destino'] ?? 'N/A';
+                $item->origem = $viagem['origem'] ?? 'N/A';
                 return $item;
             });
+
+        $topCompanies = Reservation::select('trip_id', DB::raw('COUNT(*) as total'))
+            ->where('status', 'confirmado')
+            ->groupBy('trip_id')
+            ->get()
+            ->map(function($item) use ($viagens) {
+                $viagem = $viagens->firstWhere('id', $item->trip_id);
+                $item->companhia = $viagem['companhia'] ?? 'N/A';
+                return $item;
+            })
+            ->groupBy('companhia')
+            ->map(function($group) {
+                return $group->sum('total');
+            })
+            ->sortDesc()
+            ->take(5);
+
+        $monthlyRevenue = Payment::where('status', 'completed')
+            ->select(DB::raw('DATE_FORMAT(created_at, "%Y-%m") as month'), DB::raw('SUM(amount) as revenue'))
+            ->groupBy('month')
+            ->orderBy('month', 'desc')
+            ->limit(6)
+            ->get();
 
         $recentReservations = Reservation::with('user')
             ->orderBy('created_at', 'desc')
             ->limit(10)
             ->get();
 
-        return view('admin.dashboard', compact('stats', 'topClients', 'topDestinations', 'recentReservations'));
+        return view('admin.dashboard', compact('stats', 'topClients', 'topDestinations', 'topCompanies', 'monthlyRevenue', 'recentReservations'));
     }
 
     public function users()

@@ -85,7 +85,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', function () { return view('dashboard'); })->name('dashboard');
     Route::get('/carrinho', function () { return view('carrinho'); })->name('carrinho');
     Route::get('/detalhes/{id}', function ($id) { return view('detalhes', ['tripId' => $id]); })->name('detalhes');
-    Route::get('/perfil/reservas', function () { return view('profile.reservas'); })->name('profile.reservas');
+    Route::get('/perfil/reservas', [ProfileController::class, 'reservas'])->name('profile.reservas');
+    Route::get('/perfil/reservas/{id}/editar', [ProfileController::class, 'editReservation'])->name('profile.reservations.edit');
+    Route::put('/perfil/reservas/{id}', [ProfileController::class, 'updateReservation'])->name('profile.reservations.update');
+    Route::delete('/reservas/{id}/cancelar', [ReservationController::class, 'cancel'])->name('reservations.cancel');
 
     // Gestão de Perfil
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
