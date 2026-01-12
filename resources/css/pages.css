@@ -1336,6 +1336,96 @@ body.dark-mode.detalhes-page .content-card {
     .dashboard-grid { grid-template-columns: 1fr; }
 }
 
+/* === RESERVAS PAGE === */
+body.reservas-page {
+    background: #f8f9fa;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: #2c3e50;
+    margin: 0;
+}
+
+body.reservas-page main {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 3rem 2rem;
+}
+
+body.reservas-page h1 {
+    font-size: 2.5rem;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 2rem;
+}
+
+body.reservas-page .reserva-card {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+body.reservas-page .reserva-card.cancelado {
+    opacity: 0.7;
+    background: #f8f9fa;
+}
+
+body.reservas-page .status-confirmado {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+body.reservas-page .status-cancelado {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+body.reservas-page .form-group {
+    margin-bottom: 1rem;
+}
+
+body.reservas-page .form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #6c757d;
+}
+
+body.reservas-page .form-group input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    font-size: 1rem;
+}
+
+body.dark-mode.reservas-page {
+    background: #1a1a1a;
+}
+
+body.dark-mode.reservas-page h1 {
+    color: #e0e0e0;
+}
+
+body.dark-mode.reservas-page .reserva-card {
+    background: #2d2d2d;
+    border-color: #404040;
+}
+
+body.dark-mode.reservas-page .reserva-card.cancelado {
+    background: #1a1a1a;
+}
+
+body.dark-mode.reservas-page .form-group label {
+    color: #b0b0b0;
+}
+
+body.dark-mode.reservas-page .form-group input {
+    background: #1a1a1a;
+    border-color: #404040;
+    color: #e0e0e0;
+}
+
 /* === DARK MODE === */
 body.dark-mode {
     background: #1a1a1a;
