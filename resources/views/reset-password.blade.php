@@ -4,11 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <meta name="user-authenticated" content="{{ Auth::check() ? 'true' : 'false' }}">
-    @auth
-    <meta name="user-name" content="{{ Auth::user()->name }}">
-    @endauth
-    <title>sheiqaway - Login</title>
+    <title>sheiqaway - Redefinir Palavra-passe</title>
     @vite(['resources/css/pages.css', 'resources/js/global.js'])
 </head>
 <body>
@@ -16,17 +12,14 @@
 
     <div class="auth-container">
         <div class="auth-card">
-            <h2>Bem-vindo de volta</h2>
-            <p>Entre na sua conta para continuar</p>
+            <h2>Redefinir Palavra-passe</h2>
+            <p>Introduza a sua nova palavra-passe abaixo</p>
 
-            @if (session('status'))
-                <div style="background-color: #dcfce7; color: #166534; padding: 0.75rem; border-radius: 4px; margin-bottom: 1rem;">
-                    {{ session('status') }}
-                </div>
-            @endif
-
-            <form method="POST" action="{{ route('login') }}">
+            <form method="POST" action="{{ route('password.store') }}">
                 @csrf
+
+                <!-- Password Reset Token -->
+                <input type="hidden" name="token" value="{{ $request->route('token') }}">
 
                 <div class="form-group">
                     <label for="email">E-mail</label>
@@ -34,7 +27,7 @@
                         type="email" 
                         id="email" 
                         name="email" 
-                        value="{{ old('email') }}" 
+                        value="{{ old('email', $request->email) }}" 
                         placeholder="seuemail@exemplo.com"
                         required 
                         autofocus 
@@ -46,35 +39,40 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="password">Palavra-passe</label>
+                    <label for="password">Nova Palavra-passe</label>
                     <input 
                         type="password" 
                         id="password" 
                         name="password" 
                         placeholder="••••••••"
                         required 
-                        autocomplete="current-password"
+                        autocomplete="new-password"
                     >
                     @error('password')
                         <span class="error-message">{{ $message }}</span>
                     @enderror
                 </div>
 
-                <div class="remember-forgot">
-                    <label>
-                        <input type="checkbox" name="remember" id="remember">
-                        Lembrar-me
-                    </label>
-                    @if (Route::has('password.request'))
-                        <a href="{{ route('password.request') }}">Esqueceu a palavra-passe?</a>
-                    @endif
+                <div class="form-group">
+                    <label for="password_confirmation">Confirmar Palavra-passe</label>
+                    <input 
+                        type="password" 
+                        id="password_confirmation" 
+                        name="password_confirmation" 
+                        placeholder="••••••••"
+                        required 
+                        autocomplete="new-password"
+                    >
+                    @error('password_confirmation')
+                        <span class="error-message">{{ $message }}</span>
+                    @enderror
                 </div>
 
-                <button type="submit" class="btn-primary">Entrar</button>
+                <button type="submit" class="btn-primary">Redefinir Palavra-passe</button>
             </form>
 
             <div class="auth-footer">
-                Não tem uma conta? <a href="{{ route('register') }}">Registar</a>
+                Lembrou-se da palavra-passe? <a href="{{ route('login') }}">Iniciar sessão</a>
             </div>
         </div>
     </div>
