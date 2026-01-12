@@ -16,6 +16,7 @@ use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 
+<<<<<<< Updated upstream
 
 use App\Http\Controllers\Auth\DevEmailVerificationController;
 
@@ -27,6 +28,28 @@ Route::middleware('auth')->group(function () {
 // ------------------- RESERVAS -------------------
 use App\Http\Controllers\ReservationController;
 Route::middleware(['auth', 'verified', 'validate.reservation'])->group(function () {
+=======
+// ------------------- ADMIN BACKOFFICE -------------------
+Route::middleware(['auth', 'verified', \App\Http\Middleware\IsAdmin::class])->prefix('admin')->group(function () {
+    Route::get('/', [AdminController::class, 'index'])->name('admin.dashboard');
+    Route::get('/users', [AdminController::class, 'users'])->name('admin.users');
+    Route::get('/reservations', [AdminController::class, 'reservations'])->name('admin.reservations');
+    Route::post('/users/{id}/toggle-admin', [AdminController::class, 'toggleAdmin'])->name('admin.users.toggle');
+    Route::delete('/users/{id}', [AdminController::class, 'deleteUser'])->name('admin.users.delete');
+    Route::get('/reservations/{id}/edit', [AdminController::class, 'editReservation'])->name('admin.reservations.edit');
+    Route::put('/reservations/{id}', [AdminController::class, 'updateReservation'])->name('admin.reservations.update');
+    Route::delete('/reservations/{id}', [AdminController::class, 'deleteReservation'])->name('admin.reservations.delete');
+});
+
+// ------------------- PAGAMENTOS -------------------
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::post('/payment/create-checkout-session', [PaymentController::class, 'createCheckoutSession']);
+    Route::get('/payment/success', [PaymentController::class, 'success'])->name('payment.success');
+});
+
+// ------------------- RESERVAS (API) -------------------
+Route::middleware(['auth', 'verified'])->group(function () {
+>>>>>>> Stashed changes
     Route::get('/api/reservas', [ReservationController::class, 'index'])->name('reservas.index');
     Route::post('/reservar', [ReservationController::class, 'store'])->name('reservar.store');
     Route::post('/reservar-multiplas', [ReservationController::class, 'storeMultiple'])->name('reservar.multiple');
@@ -59,10 +82,16 @@ Route::middleware('auth')->group(function () {
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 });
 
+<<<<<<< Updated upstream
 // ------------------- ROTAS PROTEGIDAS (APÓS LOGIN) -------------------
 Route::middleware(['auth', 'verified'])->group(function () {
     
     // Páginas do Utilizador
+=======
+// ------------------- ROTAS PROTEGIDAS -------------------
+Route::middleware(['auth', 'verified'])->group(function () {
+    // Páginas
+>>>>>>> Stashed changes
     Route::get('/viagens', function () { return view('viagens'); })->name('viagens');
     Route::get('/dashboard', function () { return view('dashboard'); })->name('dashboard');
     Route::get('/carrinho', function () { return view('carrinho'); })->name('carrinho');
