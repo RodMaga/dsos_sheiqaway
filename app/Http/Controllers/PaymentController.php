@@ -122,22 +122,12 @@ class PaymentController extends Controller
                     return redirect('/carrinho')->with('error', 'Utilizador não encontrado');
                 }
                 
-                // Deduct points if they were used for discount
-                if ($usarPontos && $pontosUsados > 0) {
-                    $user->points = max(0, $user->points - $pontosUsados);
-                    $user->save();
-                    \Log::info('Points deducted', [
-                        'user_id' => $userId,
-                        'pontos_usados' => $pontosUsados,
-                        'new_balance' => $user->points
-                    ]);
-                }
-                
-                // Process reservations
+                // Process reservations (points will be handled inside ReservationController)
                 $reservationController = new \App\Http\Controllers\ReservationController();
                 $reservationRequest = new Request([
                     'reservas' => $reservas,
-                    'usar_pontos' => false // Points already deducted above
+                    'usar_pontos' => $usarPontos,
+                    'pontos_usados' => $pontosUsados
                 ]);
                 
                 $result = $reservationController->storeMultiple($reservationRequest);
