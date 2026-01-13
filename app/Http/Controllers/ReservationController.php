@@ -258,12 +258,13 @@ class ReservationController extends Controller
                     
                     // Call stored procedure based on pointsEarned sign
                     if ($pointsEarned < 0) {
-                        // Spending points
+                        // Spending points - stored procedure handles user points update
                         DB::statement('CALL insert_reservas_pontos(?, ?, ?)', [
                             $reservation->id,
                             abs($pointsEarned), // points spent (positive)
                             0 // no points earned
                         ]);
+                        // Don't update user points here - stored procedure already did it
                     } else {
                         // Earning points
                         DB::statement('CALL insert_reservas_pontos(?, ?, ?)', [
@@ -271,10 +272,9 @@ class ReservationController extends Controller
                             0, // no points spent
                             $pointsEarned // points earned
                         ]);
+                        // Add earned points to user
+                        $user->points += $pointsEarned;
                     }
-                    
-                    // Add/subtract points from user (pointsEarned can be negative)
-                    $user->points += $pointsEarned;
                     
                     // Create payment for each reservation
                     $payment = new Payment();

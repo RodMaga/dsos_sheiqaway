@@ -1,0 +1,288 @@
+/* Mobile-First Optimizations */
+
+/* Prevent text size adjustment on orientation change */
+html {
+    -webkit-text-size-adjust: 100%;
+    -moz-text-size-adjust: 100%;
+    -ms-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+}
+
+/* Smooth scrolling */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Better tap highlighting */
+* {
+    -webkit-tap-highlight-color: rgba(14, 165, 233, 0.1);
+}
+
+/* Prevent zoom on input focus (iOS) */
+@media screen and (max-width: 768px) {
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="number"],
+    input[type="tel"],
+    input[type="date"],
+    select,
+    textarea {
+        font-size: 16px !important;
+    }
+}
+
+/* Better touch targets */
+button,
+a,
+input[type="button"],
+input[type="submit"],
+input[type="checkbox"],
+input[type="radio"] {
+    min-height: 44px;
+    min-width: 44px;
+}
+
+/* Improve scrolling performance */
+.modal,
+.autocomplete-items,
+.filters {
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Safe area insets for notched devices */
+@supports (padding: max(0px)) {
+    body {
+        padding-left: max(0px, env(safe-area-inset-left));
+        padding-right: max(0px, env(safe-area-inset-right));
+    }
+    
+    header {
+        padding-left: max(0px, env(safe-area-inset-left));
+        padding-right: max(0px, env(safe-area-inset-right));
+    }
+}
+
+/* Prevent overscroll bounce effect */
+body {
+    overscroll-behavior-y: contain;
+}
+
+/* Better focus states for accessibility */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: 3px solid #0ea5e9;
+    outline-offset: 2px;
+}
+
+/* Loading states */
+.loading-spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Skeleton loading for better perceived performance */
+.skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s ease-in-out infinite;
+}
+
+@keyframes loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* Optimize images for mobile */
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Better table scrolling on mobile */
+.table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 -1rem;
+    padding: 0 1rem;
+}
+
+/* Sticky elements optimization */
+.sticky {
+    position: -webkit-sticky;
+    position: sticky;
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* Dark mode optimizations */
+@media (prefers-color-scheme: dark) {
+    :root {
+        color-scheme: dark;
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    button,
+    a,
+    input,
+    select {
+        border-width: 2px;
+    }
+}
+
+/* Print styles */
+@media print {
+    header nav,
+    footer,
+    .btn,
+    button {
+        display: none;
+    }
+    
+    body {
+        background: white;
+        color: black;
+    }
+}
+
+/* Landscape orientation optimizations */
+@media (max-width: 768px) and (orientation: landscape) {
+    header {
+        padding: 0.5rem 0;
+    }
+    
+    header h1 {
+        font-size: 1.2rem;
+    }
+    
+    main {
+        padding-top: 0.5rem;
+    }
+}
+
+/* Small mobile devices */
+@media (max-width: 375px) {
+    .content-card {
+        padding: 0.875rem;
+    }
+    
+    .viagem-card,
+    .carrinho-item {
+        padding: 0.875rem;
+    }
+    
+    h1 {
+        font-size: 1.5rem !important;
+    }
+    
+    h2 {
+        font-size: 1.25rem !important;
+    }
+}
+
+/* Very small devices */
+@media (max-width: 320px) {
+    header h1 {
+        font-size: 1.1rem;
+    }
+    
+    .btn,
+    button {
+        font-size: 0.875rem;
+        padding: 0.625rem 1rem;
+    }
+}
+
+/* Tablet optimizations */
+@media (min-width: 768px) and (max-width: 1024px) {
+    #viagens-list {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .dashboard-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Large tablets and small desktops */
+@media (min-width: 1024px) and (max-width: 1280px) {
+    #viagens-list {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* Touch device specific */
+@media (hover: none) and (pointer: coarse) {
+    /* Larger touch targets */
+    .btn-reservar,
+    .btn-detalhes,
+    .btn-primary,
+    .btn-secondary,
+    .search-button,
+    .checkout-button {
+        padding: 0.875rem 1.25rem;
+        min-height: 48px;
+    }
+    
+    /* Remove hover effects on touch devices */
+    button:hover,
+    a:hover {
+        transform: none;
+    }
+    
+    /* Better spacing for touch */
+    .viagem-card,
+    .carrinho-item {
+        margin-bottom: 1.25rem;
+    }
+}
+
+/* iOS specific fixes */
+@supports (-webkit-touch-callout: none) {
+    /* Fix for iOS Safari bottom bar */
+    body {
+        min-height: -webkit-fill-available;
+    }
+    
+    /* Fix for iOS input zoom */
+    input,
+    select,
+    textarea {
+        font-size: 16px;
+    }
+}
+
+/* Android specific fixes */
+@media screen and (-webkit-min-device-pixel-ratio: 0) and (min-resolution: 0.001dpcm) {
+    select {
+        background-image: none;
+    }
+}
+
+/* Foldable devices support */
+@media (horizontal-viewport-segments: 2) {
+    main {
+        display: grid;
+        grid-template-columns: env(viewport-segment-width 0 0) env(viewport-segment-width 1 0);
+        gap: calc(env(viewport-segment-right 0 0) - env(viewport-segment-left 1 0));
+    }
+}
