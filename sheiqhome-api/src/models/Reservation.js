@@ -1,146 +1,134 @@
-import { getDatabase, updateDatabase, getNextId } from '../database.js';
-import { v4 as uuidv4 } from 'uuid';
+import { callProcedure } from '../db.js';
 
-function generateBookingReference() {
-  const uuid = uuidv4().replace(/-/g, '').substring(0, 6).toUpperCase();
-  return `SHQ-${uuid}`;
+
+function formatDatetimeForMySQL(datetime) {
+  // Convert ISO 8601 format (e.g., '2026-01-29T17:19:53.787Z') to MySQL format (YYYY-MM-DD HH:MM:SS)
+  if (!datetime) return datetime;
+  
+  const date = new Date(datetime);
+  if (isNaN(date.getTime())) {
+    // If it's already in MySQL format or invalid, return as is
+    return datetime;
+  }
+  
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(date.getUTCDate()).padStart(2, '0');
+  const hours = String(date.getUTCHours()).padStart(2, '0');
+  const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+  const seconds = String(date.getUTCSeconds()).padStart(2, '0');
+  
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 }
 
 export class Reservation {
-  static create(data) {
-    const db = getDatabase();
-    const id = getNextId('reservations');
-    const bookingReference = generateBookingReference();
-    
-    const reservation = {
-      id,
-      user_id: parseInt(data.user_id),
-      hotel_id: parseInt(data.hotel_id),
-      passenger_name: data.passenger_name,
-      check_in: data.check_in,
-      check_out: data.check_out,
-      price: parseFloat(data.price),
-      status: data.status || 'pending',
-      booking_reference: bookingReference,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
-    
-    db.reservations.push(reservation);
-    updateDatabase(db);
-    return this.findById(id);
-  }
-
-  static findById(id) {
-    const db = getDatabase();
-    const reservation = db.reservations.find(r => r.id === parseInt(id));
-    
-    if (!reservation) return null;
-    
-    // Enriquecer com dados do usuário e hotel
-    const user = db.users.find(u => u.id === reservation.user_id);
-    const hotel = db.hotels.find(h => h.id === reservation.hotel_id);
-    
-    return {
-      ...reservation,
-      user_name: user ? user.name : null,
-      user_email: user ? user.email : null,
-      hotel_name: hotel ? hotel.name : null,
-      hotel_city: hotel ? hotel.city : null,
-      hotel_stars: hotel ? hotel.stars : null
-    };
-  }
-
-  static getAll(filters = {}) {
-    const db = getDatabase();
-    let reservations = db.reservations;
-
-    if (filters.user_id) {
-      reservations = reservations.filter(r => r.user_id === parseInt(filters.user_id));
+  static async findById(id) {
+    try {
+      const results = await callProcedure('sp_reservation_get_by_id', [id]);
+      if (results.length > 0) {
+        return results[0];
+      }
+      return null;
+    } catch (error) {
+      console.error('Error finding reservation by id:', error);
+      throw error;
     }
-    if (filters.hotel_id) {
-      reservations = reservations.filter(r => r.hotel_id === parseInt(filters.hotel_id));
+  }
+
+  static async checkAvailability(bedroomId, checkIn, checkOut) {
+    try {
+      const results = await callProcedure('sp_check_bedroom_availability', [
+        bedroomId,
+        formatDatetimeForMySQL(checkIn),
+        formatDatetimeForMySQL(checkOut)
+      ]);
+      return results.length > 0 ? results[0] : null;
+    } catch (error) {
+      console.error('Error checking bedroom availability:', error);
+      throw error;
     }
-    if (filters.status) {
-      reservations = reservations.filter(r => r.status === filters.status);
+  }
+
+  static async create(data) {
+    try {
+      const results = await callProcedure('sp_reservation_insert', [
+        data.bedroom_id,
+        data.user_id,
+        data.hotel_id,
+        data.quantity,
+        formatDatetimeForMySQL(data.check_in),
+        formatDatetimeForMySQL(data.check_out),
+        data.price
+      ]);
+      
+      if (results.length > 0 && results[0].id) {
+        return this.findById(results[0].id);
+      }
+      return null;
+    } catch (error) {
+      console.error('Error creating reservation:', error);
+      throw error;
     }
-
-    // Enriquecer dados
-    return reservations
-      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-      .map(res => {
-        const user = db.users.find(u => u.id === res.user_id);
-        const hotel = db.hotels.find(h => h.id === res.hotel_id);
-        return {
-          ...res,
-          user_name: user ? user.name : null,
-          user_email: user ? user.email : null,
-          hotel_name: hotel ? hotel.name : null,
-          hotel_city: hotel ? hotel.city : null,
-          hotel_stars: hotel ? hotel.stars : null
-        };
-      });
   }
 
-  static getByUserId(userId) {
-    const db = getDatabase();
-    return db.reservations
-      .filter(r => r.user_id === parseInt(userId))
-      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-      .map(res => {
-        const user = db.users.find(u => u.id === res.user_id);
-        const hotel = db.hotels.find(h => h.id === res.hotel_id);
-        return {
-          ...res,
-          user_name: user ? user.name : null,
-          user_email: user ? user.email : null,
-          hotel_name: hotel ? hotel.name : null,
-          hotel_city: hotel ? hotel.city : null,
-          hotel_stars: hotel ? hotel.stars : null
-        };
-      });
+  static async getAll() {
+    try {
+      const { executeQuery } = await import('../db.js');
+      const sql = 'SELECT * FROM hotel_reservation';
+      return await executeQuery(sql);
+    } catch (error) {
+      console.error('Error getting all reservations:', error);
+      throw error;
+    }
   }
 
-  static getByHotelId(hotelId) {
-    const db = getDatabase();
-    return db.reservations
-      .filter(r => r.hotel_id === parseInt(hotelId))
-      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-      .map(res => {
-        const user = db.users.find(u => u.id === res.user_id);
-        const hotel = db.hotels.find(h => h.id === res.hotel_id);
-        return {
-          ...res,
-          user_name: user ? user.name : null,
-          user_email: user ? user.email : null,
-          hotel_name: hotel ? hotel.name : null,
-          hotel_city: hotel ? hotel.city : null,
-          hotel_stars: hotel ? hotel.stars : null
-        };
-      });
+  static async getByHotelId(hotelId) {
+    try {
+      const results = await callProcedure('sp_get_reservations_by_hotel', [hotelId]);
+      return results;
+    } catch (error) {
+      console.error('Error getting reservations by hotel id:', error);
+      throw error;
+    }
   }
 
-  static update(id, data) {
-    const db = getDatabase();
-    const reservation = db.reservations.find(r => r.id === parseInt(id));
-    if (!reservation) return null;
+  static async update(id, data) {
+    try {
+      // Fetch the current reservation to use existing values for undefined fields
+      const currentReservation = await this.findById(id);
+      if (!currentReservation) {
+        throw new Error('Reservation not found');
+      }
 
-    if (data.passenger_name !== undefined) reservation.passenger_name = data.passenger_name;
-    if (data.check_in !== undefined) reservation.check_in = data.check_in;
-    if (data.check_out !== undefined) reservation.check_out = data.check_out;
-    if (data.price !== undefined) reservation.price = parseFloat(data.price);
-    if (data.status !== undefined) reservation.status = data.status;
-    reservation.updated_at = new Date().toISOString();
+      console.log(data.bedroom_id);
 
-    updateDatabase(db);
-    return this.findById(id);
+      const results = await callProcedure('sp_reservation_update', [
+        id,
+        data.bedroom_id !== undefined ? data.bedroom_id : currentReservation.bedroom_id,
+        data.quantity !== undefined ? data.quantity : currentReservation.quantity,
+        formatDatetimeForMySQL(data.check_in !== undefined ? data.check_in : currentReservation.check_in),
+        formatDatetimeForMySQL(data.check_out !== undefined ? data.check_out : currentReservation.check_out),
+        data.price !== undefined ? data.price : currentReservation.price
+      ]);
+      
+      if (results.length > 0) {
+        return results[0];
+      }
+      return null;
+    } catch (error) {
+      console.error('Error updating reservation:', error);
+      throw error;
+    }
   }
 
-  static delete(id) {
-    const db = getDatabase();
-    db.reservations = db.reservations.filter(r => r.id !== parseInt(id));
-    updateDatabase(db);
-    return true;
+  static async delete(id) {
+    try {
+      await callProcedure('sp_reservation_delete', [id]);
+      return true;
+    } catch (error) {
+      console.error('Error deleting reservation:', error);
+      throw error;
+    }
   }
 }
 

@@ -18,22 +18,22 @@ router.get('/', reservationController.getAllReservations);
 
 /**
  * @swagger
- * /api/reservations/user/{userId}:
+ * /api/reservations/{id}:
  *   get:
- *     summary: Reservas de um utilizador
+ *     summary: Obter reserva por ID
  *     tags:
  *       - Reservas
  *     parameters:
  *       - in: path
- *         name: userId
+ *         name: id
  *         required: true
  *         schema:
  *           type: integer
  *     responses:
  *       200:
- *         description: Reservas do utilizador
+ *         description: Detalhes da reserva
  */
-router.get('/user/:userId', reservationController.getUserReservations);
+router.get('/:id', reservationController.getReservationById);
 
 /**
  * @swagger
@@ -56,25 +56,6 @@ router.get('/hotel/:hotelId', reservationController.getHotelReservations);
 
 /**
  * @swagger
- * /api/reservations/{id}:
- *   get:
- *     summary: Obter reserva por ID
- *     tags:
- *       - Reservas
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *     responses:
- *       200:
- *         description: Detalhes da reserva
- */
-router.get('/:id', reservationController.getReservationById);
-
-/**
- * @swagger
  * /api/reservations:
  *   post:
  *     summary: Criar nova reserva
@@ -87,22 +68,22 @@ router.get('/:id', reservationController.getReservationById);
  *           schema:
  *             type: object
  *             properties:
+ *               bedroom_id:
+ *                 type: integer
  *               user_id:
  *                 type: integer
  *               hotel_id:
  *                 type: integer
- *               passenger_name:
- *                 type: string
+ *               quantity:
+ *                 type: integer
  *               check_in:
  *                 type: string
- *                 format: date
+ *                 format: date-time
  *               check_out:
  *                 type: string
- *                 format: date
+ *                 format: date-time
  *               price:
  *                 type: number
- *               status:
- *                 type: string
  *     responses:
  *       201:
  *         description: Reserva criada
@@ -128,6 +109,19 @@ router.post('/', reservationController.createReservation);
  *         application/json:
  *           schema:
  *             type: object
+ *             properties:
+ *               bedroom_id:
+ *                 type: integer
+ *               quantity:
+ *                 type: integer
+ *               check_in:
+ *                 type: string
+ *                 format: date-time
+ *               check_out:
+ *                 type: string
+ *                 format: date-time
+ *               price:
+ *                 type: number
  *     responses:
  *       200:
  *         description: Reserva atualizada

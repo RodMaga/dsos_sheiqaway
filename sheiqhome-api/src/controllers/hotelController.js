@@ -1,8 +1,8 @@
 import Hotel from '../models/Hotel.js';
 
-export const getAllHotels = (req, res) => {
+export const getAllHotels = async (req, res) => {
   try {
-    const hotels = Hotel.getAll();
+    const hotels = await Hotel.getAll();
     res.json({
       success: true,
       data: hotels,
@@ -16,10 +16,10 @@ export const getAllHotels = (req, res) => {
   }
 };
 
-export const getHotelById = (req, res) => {
+export const getHotelById = async (req, res) => {
   try {
     const { id } = req.params;
-    const hotel = Hotel.findById(id);
+    const hotel = await Hotel.findById(id);
 
     if (!hotel) {
       return res.status(404).json({
@@ -40,76 +40,22 @@ export const getHotelById = (req, res) => {
   }
 };
 
-export const filterHotelsByCity = (req, res) => {
+export const createHotel = async (req, res) => {
   try {
-    const { city } = req.query;
+    const { name, description, address, phone } = req.body;
 
-    if (!city) {
+    if (!name) {
       return res.status(400).json({
         success: false,
-        error: 'City parameter is required'
+        error: 'Hotel name is required'
       });
     }
 
-    const hotels = Hotel.filterByCity(city);
-    res.json({
-      success: true,
-      data: hotels,
-      count: hotels.length,
-      filter: { city }
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-};
-
-export const filterHotelsByStars = (req, res) => {
-  try {
-    const { stars } = req.query;
-
-    if (!stars || isNaN(stars) || stars < 1 || stars > 5) {
-      return res.status(400).json({
-        success: false,
-        error: 'Stars parameter must be a number between 1 and 5'
-      });
-    }
-
-    const hotels = Hotel.filterByStars(parseInt(stars));
-    res.json({
-      success: true,
-      data: hotels,
-      count: hotels.length,
-      filter: { minStars: parseInt(stars) }
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-};
-
-export const createHotel = (req, res) => {
-  try {
-    const { name, city, stars, description, address, phone } = req.body;
-
-    if (!name || !city) {
-      return res.status(400).json({
-        success: false,
-        error: 'Name and city are required'
-      });
-    }
-
-    const hotel = Hotel.create({
+    const hotel = await Hotel.create({
       name,
-      city,
-      stars: stars ? parseInt(stars) : null,
-      description,
-      address,
-      phone
+      description: description || null,
+      address: address || null,
+      phone: phone || null
     });
 
     res.status(201).json({
@@ -125,12 +71,12 @@ export const createHotel = (req, res) => {
   }
 };
 
-export const updateHotel = (req, res) => {
+export const updateHotel = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, city, stars, description, address, phone } = req.body;
+    const { name, description, address, phone, hotel_status_id, average_rating } = req.body;
 
-    const hotel = Hotel.findById(id);
+    const hotel = await Hotel.findById(id);
     if (!hotel) {
       return res.status(404).json({
         success: false,
@@ -138,13 +84,13 @@ export const updateHotel = (req, res) => {
       });
     }
 
-    const updatedHotel = Hotel.update(id, {
+    const updatedHotel = await Hotel.update(id, {
       name,
-      city,
-      stars: stars ? parseInt(stars) : undefined,
       description,
       address,
-      phone
+      phone,
+      hotel_status_id,
+      average_rating
     });
 
     res.json({
@@ -160,11 +106,11 @@ export const updateHotel = (req, res) => {
   }
 };
 
-export const deleteHotel = (req, res) => {
+export const deleteHotel = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const hotel = Hotel.findById(id);
+    const hotel = await Hotel.findById(id);
     if (!hotel) {
       return res.status(404).json({
         success: false,
@@ -172,10 +118,93 @@ export const deleteHotel = (req, res) => {
       });
     }
 
-    Hotel.delete(id);
+    await Hotel.delete(id);
     res.json({
       success: true,
       message: 'Hotel deleted successfully'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+};
+
+export const getHotelsByStatus = async (req, res) => {
+  try {
+    const { status_id } = req.query;
+
+    if (!status_id || isNaN(status_id)) {
+      return res.status(400).json({
+        success: false,
+        error: 'status_id parameter is required and must be a number'
+      });
+    }
+
+    const hotels = await Hotel.getByStatus(parseInt(status_id));
+    res.json({
+      success: true,
+      data: hotels,
+      count: hotels.length,
+      filter: { status_id: parseInt(status_id) }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+};
+
+export const getActiveHotelsByRating = async (req, res) => {
+  try {
+    const hotels = await Hotel.getActiveByRating();
+    res.json({
+      success: true,
+      data: hotels,
+      count: hotels.length
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+};
+
+export const createHotelRating = async (req, res) => {
+  try {
+    const { hotel_id, user_id, rating } = req.body;
+
+    if (!hotel_id || !user_id || rating === undefined) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: hotel_id, user_id, rating'
+      });
+    }
+
+    if (rating < 1 || rating > 5 || !Number.isInteger(rating)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Rating must be an integer between 1 and 5'
+      });
+    }
+
+    const hotel = await Hotel.findById(hotel_id);
+    if (!hotel) {
+      return res.status(404).json({
+        success: false,
+        error: 'Hotel not found'
+      });
+    }
+
+    const ratingResult = await Hotel.createRating(hotel_id, user_id, rating);
+
+    res.status(201).json({
+      success: true,
+      data: ratingResult,
+      message: 'Hotel rating created successfully'
     });
   } catch (error) {
     res.status(500).json({

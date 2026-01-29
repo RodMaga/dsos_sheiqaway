@@ -1,22 +1,15 @@
 import Reservation from '../models/Reservation.js';
 import Hotel from '../models/Hotel.js';
 import User from '../models/User.js';
+import Bedroom from '../models/Bedroom.js';
 
-export const getAllReservations = (req, res) => {
+export const getAllReservations = async (req, res) => {
   try {
-    const { user_id, hotel_id, status } = req.query;
-    const filters = {};
-
-    if (user_id) filters.user_id = parseInt(user_id);
-    if (hotel_id) filters.hotel_id = parseInt(hotel_id);
-    if (status) filters.status = status;
-
-    const reservations = Reservation.getAll(filters);
+    const reservations = await Reservation.getAll();
     res.json({
       success: true,
       data: reservations,
-      count: reservations.length,
-      filters: filters
+      count: reservations.length
     });
   } catch (error) {
     res.status(500).json({
@@ -26,10 +19,10 @@ export const getAllReservations = (req, res) => {
   }
 };
 
-export const getReservationById = (req, res) => {
+export const getReservationById = async (req, res) => {
   try {
     const { id } = req.params;
-    const reservation = Reservation.findById(id);
+    const reservation = await Reservation.findById(id);
 
     if (!reservation) {
       return res.status(404).json({
@@ -50,38 +43,11 @@ export const getReservationById = (req, res) => {
   }
 };
 
-export const getUserReservations = (req, res) => {
-  try {
-    const { userId } = req.params;
-    
-    const user = User.findById(userId);
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        error: 'User not found'
-      });
-    }
-
-    const reservations = Reservation.getByUserId(userId);
-    res.json({
-      success: true,
-      data: reservations,
-      count: reservations.length,
-      user_id: parseInt(userId)
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-};
-
-export const getHotelReservations = (req, res) => {
+export const getHotelReservations = async (req, res) => {
   try {
     const { hotelId } = req.params;
     
-    const hotel = Hotel.findById(hotelId);
+    const hotel = await Hotel.findById(hotelId);
     if (!hotel) {
       return res.status(404).json({
         success: false,
@@ -89,13 +55,10 @@ export const getHotelReservations = (req, res) => {
       });
     }
 
-    const reservations = Reservation.getByHotelId(hotelId);
+    const reservations = await Reservation.getByHotelId(hotelId);
     res.json({
       success: true,
-      data: reservations,
-      count: reservations.length,
-      hotel_id: parseInt(hotelId),
-      hotel_name: hotel.name
+      data: reservations
     });
   } catch (error) {
     res.status(500).json({
@@ -105,22 +68,22 @@ export const getHotelReservations = (req, res) => {
   }
 };
 
-export const createReservation = (req, res) => {
+export const createReservation = async (req, res) => {
   try {
-    const { user_id, hotel_id, passenger_name, check_in, check_out, price, status } = req.body;
+    const { bedroom_id, user_id, hotel_id, quantity, check_in, check_out, price } = req.body;
 
     // Validations
-    if (!user_id || !hotel_id || !passenger_name || !check_in || !check_out || !price) {
+    if (!bedroom_id || !user_id || !hotel_id || !quantity || !check_in || !check_out || !price) {
       return res.status(400).json({
         success: false,
-        error: 'Missing required fields: user_id, hotel_id, passenger_name, check_in, check_out, price'
+        error: 'Missing required fields: bedroom_id, user_id, hotel_id, quantity, check_in, check_out, price'
       });
     }
 
-    if (passenger_name.length < 3 || passenger_name.length > 100) {
+    if (quantity < 1) {
       return res.status(400).json({
         success: false,
-        error: 'Passenger name must be between 3 and 100 characters'
+        error: 'Quantity must be at least 1'
       });
     }
 
@@ -131,7 +94,7 @@ export const createReservation = (req, res) => {
       });
     }
 
-    const user = User.findById(user_id);
+    const user = await User.findById(user_id);
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -139,7 +102,7 @@ export const createReservation = (req, res) => {
       });
     }
 
-    const hotel = Hotel.findById(hotel_id);
+    const hotel = await Hotel.findById(hotel_id);
     if (!hotel) {
       return res.status(404).json({
         success: false,
@@ -147,21 +110,32 @@ export const createReservation = (req, res) => {
       });
     }
 
-    if (status && !['pending', 'confirmed', 'cancelled'].includes(status)) {
-      return res.status(400).json({
+    const bedroom = await Bedroom.findById(bedroom_id);
+    if (!bedroom) {
+      return res.status(404).json({
         success: false,
-        error: 'Invalid status. Must be: pending, confirmed, or cancelled'
+        error: 'Bedroom not found'
       });
     }
 
-    const reservation = Reservation.create({
+    // Check bedroom availability
+    const availability = await Reservation.checkAvailability(bedroom_id, check_in, check_out);
+    console.log('Availability check result:', availability);
+    if (availability) {
+      return res.status(400).json({
+        success: false,
+        error: 'Bedroom is not available for the selected dates'
+      });
+    }
+
+    const reservation = await Reservation.create({
+      bedroom_id,
       user_id,
       hotel_id,
-      passenger_name,
+      quantity,
       check_in,
       check_out,
-      price,
-      status: status || 'pending'
+      price
     });
 
     res.status(201).json({
@@ -177,12 +151,12 @@ export const createReservation = (req, res) => {
   }
 };
 
-export const updateReservation = (req, res) => {
+export const updateReservation = async (req, res) => {
   try {
     const { id } = req.params;
-    const { passenger_name, check_in, check_out, price, status } = req.body;
+    const { bedroom_id, quantity, check_in, check_out, price, reservation_status_id } = req.body;
 
-    const reservation = Reservation.findById(id);
+    const reservation = await Reservation.findById(id);
     if (!reservation) {
       return res.status(404).json({
         success: false,
@@ -190,10 +164,17 @@ export const updateReservation = (req, res) => {
       });
     }
 
-    if (passenger_name && (passenger_name.length < 3 || passenger_name.length > 100)) {
+    if (reservation.reservation_status_id !== 3) {
       return res.status(400).json({
         success: false,
-        error: 'Passenger name must be between 3 and 100 characters'
+        error: 'Reservation invalid. Must be in pending status to update.'
+      });
+    }
+
+    if (quantity !== undefined && quantity < 1) {
+      return res.status(400).json({
+        success: false,
+        error: 'Quantity must be at least 1'
       });
     }
 
@@ -204,19 +185,13 @@ export const updateReservation = (req, res) => {
       });
     }
 
-    if (status && !['pending', 'confirmed', 'cancelled'].includes(status)) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid status. Must be: pending, confirmed, or cancelled'
-      });
-    }
-
-    const updatedReservation = Reservation.update(id, {
-      passenger_name,
+    const updatedReservation = await Reservation.update(id, {
+      bedroom_id,
+      quantity,
       check_in,
       check_out,
       price,
-      status
+      reservation_status_id
     });
 
     res.json({
@@ -232,11 +207,11 @@ export const updateReservation = (req, res) => {
   }
 };
 
-export const deleteReservation = (req, res) => {
+export const deleteReservation = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const reservation = Reservation.findById(id);
+    const reservation = await Reservation.findById(id);
     if (!reservation) {
       return res.status(404).json({
         success: false,
@@ -244,7 +219,7 @@ export const deleteReservation = (req, res) => {
       });
     }
 
-    Reservation.delete(id);
+    await Reservation.delete(id);
     res.json({
       success: true,
       message: 'Reservation deleted successfully'

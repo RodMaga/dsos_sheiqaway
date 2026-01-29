@@ -1,76 +1,130 @@
-import { getDatabase, updateDatabase, getNextId } from '../database.js';
+import { callProcedure } from '../db.js';
 
 export class Hotel {
-  static create(data) {
-    const db = getDatabase();
-    const id = getNextId('hotels');
-    const hotel = {
-      id,
-      name: data.name,
-      city: data.city,
-      stars: data.stars || null,
-      description: data.description || null,
-      address: data.address || null,
-      phone: data.phone || null,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
-    db.hotels.push(hotel);
-    updateDatabase(db);
-    return hotel;
+  static async findById(id) {
+    try {
+      const results = await callProcedure('sp_hotel_get_by_id', [id]);
+      if (results.length > 0) {
+        return {
+          ...results[0],
+          average_rating: parseFloat(results[0].average_rating) || 0
+        };
+      }
+      return null;
+    } catch (error) {
+      console.error('Error finding hotel by id:', error);
+      throw error;
+    }
   }
 
-  static findById(id) {
-    const db = getDatabase();
-    return db.hotels.find(h => h.id === parseInt(id));
+  static async getAll() {
+    try {
+      const results = await callProcedure('sp_hotel_get_all', []);
+      return results.map(hotel => ({
+        ...hotel,
+        average_rating: parseFloat(hotel.average_rating) || 0
+      }));
+    } catch (error) {
+      console.error('Error getting all hotels:', error);
+      throw error;
+    }
   }
 
-  static getAll() {
-    const db = getDatabase();
-    return db.hotels.sort((a, b) => {
-      if (a.city !== b.city) return a.city.localeCompare(b.city);
-      return a.name.localeCompare(b.name);
-    });
+  static async create(data) {
+    try {
+      const results = await callProcedure('sp_hotel_insert', [
+        data.name,
+        data.description || null,
+        data.address || null,
+        data.phone || null
+      ]);
+      
+      if (results.length > 0 && results[0].id) {
+        return this.findById(results[0].id);
+      }
+      return null;
+    } catch (error) {
+      console.error('Error creating hotel:', error);
+      throw error;
+    }
   }
 
-  static filterByCity(city) {
-    const db = getDatabase();
-    return db.hotels.filter(h => h.city === city).sort((a, b) => a.name.localeCompare(b.name));
+  static async update(id, data) {
+    try {
+      const results = await callProcedure('sp_hotel_update', [
+        id,
+        data.name,
+        data.description || null,
+        data.address || null,
+        data.phone || null,
+        data.hotel_status_id || 1
+      ]);
+      
+      if (results.length > 0) {
+        return {
+          ...results[0],
+          average_rating: parseFloat(results[0].average_rating) || 0
+        };
+      }
+      return null;
+    } catch (error) {
+      console.error('Error updating hotel:', error);
+      throw error;
+    }
   }
 
-  static filterByStars(stars) {
-    const db = getDatabase();
-    return db.hotels
-      .filter(h => h.stars && h.stars >= stars)
-      .sort((a, b) => {
-        if (b.stars !== a.stars) return b.stars - a.stars;
-        if (a.city !== b.city) return a.city.localeCompare(b.city);
-        return a.name.localeCompare(b.name);
-      });
+  static async delete(id) {
+    try {
+      await callProcedure('sp_hotel_delete', [id]);
+      return true;
+    } catch (error) {
+      console.error('Error deleting hotel:', error);
+      throw error;
+    }
   }
 
-  static update(id, data) {
-    const db = getDatabase();
-    const hotel = db.hotels.find(h => h.id === parseInt(id));
-    if (!hotel) return null;
-
-    if (data.name !== undefined) hotel.name = data.name;
-    if (data.city !== undefined) hotel.city = data.city;
-    if (data.stars !== undefined) hotel.stars = data.stars;
-    if (data.description !== undefined) hotel.description = data.description;
-    if (data.address !== undefined) hotel.address = data.address;
-    if (data.phone !== undefined) hotel.phone = data.phone;
-    hotel.updated_at = new Date().toISOString();
-
-    updateDatabase(db);
-    return hotel;
+  static async getByStatus(statusId) {
+    try {
+      const results = await callProcedure('sp_get_hotels_by_status', [statusId]);
+      return results.map(hotel => ({
+        ...hotel,
+        average_rating: parseFloat(hotel.average_rating) || 0
+      }));
+    } catch (error) {
+      console.error('Error getting hotels by status:', error);
+      throw error;
+    }
   }
 
-  static delete(id) {
-    const db = getDatabase();
-    db.hotels = db.hotels.filter(h => h.id !== parseInt(id));
-    updateDatabase(db);
-    return true;
+  static async getActiveByRating() {
+    try {
+      const results = await callProcedure('sp_get_active_hotels_by_rating', []);
+      return results.map(hotel => ({
+        ...hotel,
+        average_rating: parseFloat(hotel.average_rating) || 0
+      }));
+    } catch (error) {
+      console.error('Error getting active hotels by rating:', error);
+      throw error;
+    }
+  }
+
+  static async createRating(hotelId, userId, rating) {
+    try {
+      const results = await callProcedure('sp_hotel_rating_insert', [
+        hotelId,
+        userId,
+        rating
+      ]);
+      
+      if (results.length > 0 && results[0].id) {
+        return results[0];
+      }
+      return null;
+    } catch (error) {
+      console.error('Error creating hotel rating:', error);
+      throw error;
+    }
   }
 }
 

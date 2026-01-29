@@ -15,11 +15,13 @@ if (!fs.existsSync(dataDir)) {
 const defaultDatabase = {
   users: [],
   hotels: [],
+  bedrooms: [],
   reservations: [],
   payments: [],
   _counters: {
     users: 0,
     hotels: 0,
+    bedrooms: 0,
     reservations: 0,
     payments: 0
   }
@@ -59,6 +61,7 @@ if (db.users === undefined) {
   db._counters = {
     users: db.users ? db.users.length : 0,
     hotels: db.hotels ? db.hotels.length : 0,
+    bedrooms: db.bedrooms ? db.bedrooms.length : 0,
     reservations: db.reservations ? db.reservations.length : 0,
     payments: db.payments ? db.payments.length : 0
   };
@@ -85,6 +88,7 @@ export function getNextId(table) {
   if (!db._counters) {
     db._counters = {
       users: db.users ? db.users.length : 0,
+      bedrooms: db.bedrooms ? db.bedrooms.length : 0,
       hotels: db.hotels ? db.hotels.length : 0,
       reservations: db.reservations ? db.reservations.length : 0,
       payments: db.payments ? db.payments.length : 0

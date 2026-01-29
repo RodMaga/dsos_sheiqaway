@@ -37,42 +37,36 @@ router.get('/:id', hotelController.getHotelById);
 
 /**
  * @swagger
- * /api/hotels/filter/city:
+ * /api/hotels/status/filter:
  *   get:
- *     summary: Filtrar hotéis por cidade
+ *     summary: Filtrar hotéis por estado/status
  *     tags:
  *       - Hotéis
  *     parameters:
  *       - in: query
- *         name: city
- *         required: true
- *         schema:
- *           type: string
- *         description: Nome da cidade
- *     responses:
- *       200:
- *         description: Hotéis da cidade
- */
-router.get('/filter/city', hotelController.filterHotelsByCity);
-
-/**
- * @swagger
- * /api/hotels/filter/stars:
- *   get:
- *     summary: Filtrar hotéis por estrelas
- *     tags:
- *       - Hotéis
- *     parameters:
- *       - in: query
- *         name: stars
+ *         name: status_id
  *         required: true
  *         schema:
  *           type: integer
+ *         description: ID do estado do hotel
  *     responses:
  *       200:
- *         description: Hotéis com classificação
+ *         description: Hotéis filtrados por estado
  */
-router.get('/filter/stars', hotelController.filterHotelsByStars);
+router.get('/status/filter', hotelController.getHotelsByStatus);
+
+/**
+ * @swagger
+ * /api/hotels/active/rating:
+ *   get:
+ *     summary: Obter hotéis ativos ordenados por avaliação
+ *     tags:
+ *       - Hotéis
+ *     responses:
+ *       200:
+ *         description: Hotéis ativos ordenados por avaliação (maior para menor)
+ */
+router.get('/active/rating', hotelController.getActiveHotelsByRating);
 
 /**
  * @swagger
@@ -90,14 +84,12 @@ router.get('/filter/stars', hotelController.filterHotelsByStars);
  *             properties:
  *               name:
  *                 type: string
- *               city:
+ *               description:
  *                 type: string
- *               country:
+ *               address:
  *                 type: string
- *               stars:
- *                 type: integer
- *               price_per_night:
- *                 type: number
+ *               phone:
+ *                 type: string
  *     responses:
  *       201:
  *         description: Hotel criado
@@ -123,6 +115,15 @@ router.post('/', hotelController.createHotel);
  *         application/json:
  *           schema:
  *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               address:
+ *                 type: string
+ *               phone:
+ *                 type: string
  *     responses:
  *       200:
  *         description: Hotel atualizado
@@ -147,5 +148,37 @@ router.put('/:id', hotelController.updateHotel);
  *         description: Hotel deletado
  */
 router.delete('/:id', hotelController.deleteHotel);
+
+/**
+ * @swagger
+ * /api/hotels/rating/create:
+ *   post:
+ *     summary: Criar avaliação de hotel
+ *     tags:
+ *       - Hotéis
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - hotel_id
+ *               - user_id
+ *               - rating
+ *             properties:
+ *               hotel_id:
+ *                 type: integer
+ *               user_id:
+ *                 type: integer
+ *               rating:
+ *                 type: integer
+ *                 minimum: 1
+ *                 maximum: 5
+ *     responses:
+ *       201:
+ *         description: Avaliação criada
+ */
+router.post('/rating/create', hotelController.createHotelRating);
 
 export default router;
