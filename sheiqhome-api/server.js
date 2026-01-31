@@ -6,7 +6,6 @@ import hotelRoutes from './src/routes/hotels.js';
 import reservationRoutes from './src/routes/reservations.js';
 import userRoutes from './src/routes/users.js';
 import bedroomRoutes from './src/routes/bedrooms.js';
-import seedDatabase from './src/seeders/seedDatabase.js';
 import swaggerSpec from './src/swagger.js';
 
 const app = express();
@@ -28,9 +27,6 @@ app.use(express.urlencoded({ extended: true }));
 
 // Initialize database
 initializeDatabase();
-
-// Seed database if needed
-seedDatabase();
 
 // Swagger documentation
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
